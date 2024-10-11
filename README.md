@@ -48,11 +48,13 @@
 4. **Boost Your Productivity:** Open a command prompt window, use the keyboard shortcuts listed above to navigate directories and manage commands effortlessly!
 
 > [!NOTE]  
-> Windows Security might flag the downloaded binaries as potential threats, but this is a false positive.
+> Windows Security might flag the downloaded binaries as a false positive due to the nature of the software. 
+> This is normal and doesn't indicate a security threat. 
 > If you're concerned, you can always build the project from the source code yourself.
 > 
 > If you encounter an error message like "VCRUNTIME140.dll was not found" when running slickcmd.exe, 
-> please download and install the [Visual C++ Runtime Libraries](https://aka.ms/vs/17/release/vc_redist.x64.exe) to resolve the issue. 
+> download and install the Visual C++ Runtime Libraries at https://aka.ms/vs/17/release/vc_redist.x64.exe first. 
+
 
 ## 🛠️ Build from source
 ```
