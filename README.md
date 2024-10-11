@@ -42,7 +42,7 @@
 
 ## 📖 Installation & Getting Started
 
-1. **Download:** Get the latest version of Slick Cmd from the [Releases page](#).
+1. **Download:** Get the latest version of Slick Cmd from the [Releases page](https://github.com/johnlng/slickcmd/releases).
 2. **Install:** Extract the release zip to a preferred installation folder on your local filesystem.
 3. **Launch:** Start Slick Cmd by double-clicking `slickcmd.exe`. A small icon will appear in your system tray, indicating it’s running.
 4. **Boost Your Productivity:** Open a command prompt window, use the keyboard shortcuts listed above to navigate directories and manage commands effortlessly!
@@ -57,11 +57,11 @@ You can find the binaries in the target folder.
 
 ## 📜 License
 
-Slick Cmd is distributed under the [MIT License](#).
+Slick Cmd is distributed under the [MIT License](https://github.com/johnlng/slickcmd?tab=MIT-1-ov-file).
 
 ## 💡 Contribute & Support
 
-I’d love to hear your thoughts! If you have suggestions, feature requests, or find bugs, please [open an issue on the GitHub repository](#).
+I’d love to hear your thoughts! If you have suggestions, feature requests, or find bugs, please [open an issue on the GitHub repository](https://github.com/johnlng/slickcmd/issues).
 
 If you like the project, please consider giving it a ⭐ and sharing it with others to show your support!
 
