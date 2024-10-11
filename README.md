@@ -48,7 +48,7 @@
 4. **Boost Your Productivity:** Open a command prompt window, use the keyboard shortcuts listed above to navigate directories and manage commands effortlessly!
 
 > [!NOTE]  
-> WWindows Security might flag the downloaded binaries as potential threats, but this is a false positive.
+> Windows Security might flag the downloaded binaries as potential threats, but this is a false positive.
 > If you're concerned, you can always build the project from the source code yourself.
 > 
 > If you encounter an error message like "VCRUNTIME140.dll was not found" when running slickcmd.exe, 
