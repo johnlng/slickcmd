@@ -1,0 +1,6 @@
+.vs/
+output/
+
+*.suo
+*.user
+*.aps

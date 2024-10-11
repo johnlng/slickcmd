@@ -1,0 +1,18 @@
+[package]
+name = "slickcmd"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+once_cell = "1.19.0"
+widestring = "1.1.0"
+md5 = "0.7.0"
+itertools = "0.13.0"
+anyhow = "1.0.89"
+log = "0.4.22"
+simplelog = "^0.12.0"
+slickcmd_common = {path="../slickcmd_common"}
+
+[dependencies.windows]
+version = "0.58.0"
+features = ["Win32_Foundation", "Win32_System", "Win32_System_Console", "Win32_Graphics", "Win32_System_LibraryLoader", "Win32_UI", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_Security", "Win32_UI_Shell", "Win32_System_Com"]
