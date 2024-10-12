@@ -358,6 +358,7 @@ impl CommandHistList {
     }
 
     pub fn extract_time_parts(time: u64) -> (i32, i32, i32, i32, i32) {
+        let time = time / 1000;
         let md = time / 1000000 % 10000;
         let m = md / 100;
         let d = md % 100;

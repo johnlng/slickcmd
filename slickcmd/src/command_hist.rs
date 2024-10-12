@@ -96,7 +96,7 @@ impl CommandHist {
         let mut s_time = line[1..index].to_owned();
         s_time.remove(s_time.find('_').unwrap());
 
-        let time = s_time.parse::<u64>().unwrap_or_default();
+        let time = s_time.parse::<u64>().unwrap_or_default() * 1000;
 
         line = line[index + 1..].to_owned();
         if line.is_empty() || line.as_bytes()[0] != b'[' {
