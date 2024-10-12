@@ -42,6 +42,8 @@ jobs:
           key: ${{ matrix.target }}
       - name: Build binary
         uses: actions-rs/cargo@v1
+        env:
+          CARGO_ENCODED_RUSTFLAGS: "-Ctarget-feature=+crt-static\u001F-Clink-args=/DEFAULTLIB:ucrt.lib /DEFAULTLIB:libvcruntime.lib libcmt.lib /NODEFAULTLIB:vcruntime.lib /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:libucrt.lib"
         with:
           command: build
           args: --release --locked --target=${{ matrix.target }} --color=always --verbose
