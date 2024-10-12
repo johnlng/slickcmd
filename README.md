@@ -51,9 +51,6 @@
 > Windows Security might flag the downloaded binaries as a false positive due to the nature of the software. 
 > This is normal and doesn't indicate a security threat. 
 > If you're concerned, you can always build the project from the source code yourself.
-> 
-> If you encounter an error message like "VCRUNTIME140.dll was not found" when running slickcmd.exe, 
-> download and install the Visual C++ Runtime Libraries at https://aka.ms/vs/17/release/vc_redist.x64.exe first. 
 
 
 ## 🛠️ Build from source
