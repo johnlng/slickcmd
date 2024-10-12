@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/johnlng/slickcmd/actions/workflows/ci.yml/badge.svg)](https://github.com/johnlng/slickcmd/actions)
 ![Static Badge](https://img.shields.io/badge/os-Windows-blue)
+![GitHub Downloads](https://img.shields.io/github/downloads/johnlng/slickcmd/total)
 
 **Slick Cmd** is a lightweight utility designed to supercharge your Windows Command Prompt experience by making directory navigation, path completion, and command management more efficient. Slick Cmd runs quietly in your system tray, enabling you to access its powerful features through intuitive keyboard shortcuts.
 
