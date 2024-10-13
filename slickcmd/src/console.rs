@@ -155,18 +155,18 @@ impl Console {
             Box::new(CmdShell {})
         };
 
-        let mut console = Console {
+        let command_hist = CommandHist::new(&shell.name(), 0);
+
+        let console = Console {
             hwnd,
             cur_dir,
             pid,
             hwnd_msg,
             shell,
             recent_dirs,
+            command_hist,
             ..Default::default()
         };
-
-        console.command_hist.pid = pid;
-        console.command_hist.category = console.shell.name();
 
         console
     }
@@ -177,7 +177,6 @@ impl Console {
             hist_win.destroy();
             self.command_hist_win = None;
         }
-        self.command_hist.save();
     }
 
     pub fn on_activate(&mut self) {
@@ -193,6 +192,7 @@ impl Console {
             self.hide_ac_list();
         }
         win32::unregister_hotkey(self.hwnd_msg, 1);
+        self.command_hist.save();
     }
 
     pub fn get_fg_pid(&self) -> u32 {
@@ -560,7 +560,9 @@ impl Console {
             win32::set_foreground_window(win.hwnd);
             return;
         }
-        let mut hists = CommandHist::load_old_hists(&self.shell.name());
+
+        let category = &self.shell.name();
+        let mut hists = CommandHist::load_old_hists(category, self.command_hist.sid());
 
         if !self.command_hist.is_empty() {
             hists.push(self.command_hist.clone());

@@ -143,6 +143,7 @@ dependencies = [
  "once_cell",
  "simplelog",
  "slickcmd_common",
+ "time",
  "widestring",
  "windows",
 ]
