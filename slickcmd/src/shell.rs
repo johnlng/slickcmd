@@ -1,9 +1,9 @@
 use crate::console::Console;
 use crate::key_hook_suppressor::KeyHookSuppressor;
-use crate::keyboard_input::KeyboardInput;
 use slickcmd_common::{utils, win32};
-use windows::Win32::Foundation::{FALSE, TRUE};
-use windows::Win32::System::Console::{INPUT_RECORD, KEY_EVENT};
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Console::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
 
 pub trait Shell {
     fn name(&self) -> String;
@@ -165,9 +165,10 @@ impl Shell for PsShell {
 
     fn set_input(&self, console: &Console, input_text: &str) {
         let _khs = KeyHookSuppressor::new(console.hwnd);
-        let mut ki = KeyboardInput::new();
-        ki.escape();
-        ki.text(input_text);
-        ki.send();
+        win32::send_message(console.hwnd, WM_CHAR, WPARAM('\x1b' as _), LPARAM(0));
+        let wcs = input_text.encode_utf16();
+        for wc in wcs {
+            win32::send_message(console.hwnd, WM_CHAR, WPARAM(wc as _), LPARAM(0));
+        }
     }
 }

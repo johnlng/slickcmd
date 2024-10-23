@@ -1134,3 +1134,7 @@ pub fn set_console_title(title: &str) -> bool {
 pub fn set_console_ctrl_handler(handler: PHANDLER_ROUTINE, add: bool) -> bool {
     unsafe { SetConsoleCtrlHandler(handler, add).is_ok() }
 }
+
+pub fn vk_key_scan(wc: u16) -> i16 {
+    unsafe { VkKeyScanW(wc) }
+}
