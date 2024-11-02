@@ -1,4 +1,3 @@
-use crate::GLOBAL;
 use slickcmd_common::consts::*;
 use slickcmd_common::{logd, win32};
 use std::cmp::Ordering::Equal;
@@ -8,6 +7,7 @@ use std::thread;
 use widestring::U16CString;
 use windows::Win32::Foundation::*;
 use windows::Win32::Storage::FileSystem::*;
+use crate::global::GLOBAL;
 
 #[derive(Default)]
 pub struct DirCompleter();

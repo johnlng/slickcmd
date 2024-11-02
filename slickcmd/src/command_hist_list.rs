@@ -1,8 +1,7 @@
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
-    command_hist::{CommandHist, CommandInfo},
-    GLOBAL,
+    command_hist::{CommandHist, CommandInfo}
 };
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::win32::{self};
@@ -10,6 +9,7 @@ use windows::Win32::{
     Foundation::*, Graphics::Gdi::*, UI::Controls::*, UI::Input::KeyboardAndMouse::*,
     UI::WindowsAndMessaging::*,
 };
+use crate::global::GLOBAL;
 
 #[derive(Default, Clone)]
 struct CommandGroup {

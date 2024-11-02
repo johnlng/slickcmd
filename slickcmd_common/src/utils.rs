@@ -188,6 +188,27 @@ pub fn make_lparam(l: i32, h: i32) -> LPARAM {
     LPARAM(((h as u16 as u32) << 16 | l as u16 as u32) as _)
 }
 
+pub fn rect_to_u64(rect: RECT) -> u64 {
+    let dwtl = (rect.top as u16 as u32) << 16 | rect.left as u16 as u32;
+    let dwbr = (rect.bottom as u16 as u32) << 16 | rect.right as u16 as u32;
+    (dwtl as u64) << 32 | dwbr as u64
+}
+
+pub fn rect_from_u64(value: u64) -> RECT {
+    let dwtl = (value >> 32) as u32;
+    let dwbr = value as u32;
+    let top = (dwtl >> 16) as u16 as i32;
+    let left = dwtl as u16 as i32;
+    let bottom = (dwbr >> 16) as u16 as i32;
+    let right = dwbr as u16 as i32;
+    RECT {
+        left,
+        top,
+        right,
+        bottom,
+    }
+}
+
 pub fn iif<T>(condition: bool, true_val: T, false_val: T) -> T {
     if condition {
         true_val

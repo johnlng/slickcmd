@@ -1,19 +1,22 @@
-use crate::dir_man::RecentDirs;
+use crate::app_state::AppState;
+use crate::console_man::ConsoleMan;
+use crate::global::GLOBAL;
 use crate::main_win::MainWin;
 use crate::msg_win::MsgWin;
 use crate::options::Options;
 use crate::startup_link::StartupLink;
 use crate::tray_icon::TrayIcon;
-use crate::GLOBAL;
+use crate::win_man::WinMan;
 use slickcmd_common::consts::{APP_TITLE, IDI_SMALL, WM_TRAY_CALLBACK};
 use slickcmd_common::ini::Ini;
 use slickcmd_common::{consts, utils, win32, winproc};
+use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 use windows::Win32::Foundation::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-#[derive(Default)]
+// #[derive(Default)]
 pub struct App {
     main_win: MainWin,
 
@@ -23,13 +26,39 @@ pub struct App {
 
     hhook_shell: HHOOK,
 
-    recent_dirs: Rc<RecentDirs>,
+    state: Rc<AppState>,
+
+    // win_man: Rc<RefCell<WinMan>>,
+
+    // console_man: Rc<RefCell<ConsoleMan>>,
 }
 
 unsafe impl Sync for App {}
 unsafe impl Send for App {}
 
 impl App {
+
+    pub fn new() -> App {
+        let state = Rc::new(AppState::default());
+
+        let console_man = ConsoleMan::new(state.clone());
+        let console_man = Rc::new(RefCell::new(console_man));
+
+        let win_man = WinMan::new(console_man.clone());
+        let win_man = Rc::new(RefCell::new(win_man));
+
+        let msg_win = MsgWin::new(win_man.clone(), console_man.clone());
+        App {
+            main_win: MainWin::default(),
+            msg_win,
+            tray_icon: TrayIcon::default(),
+            hhook_shell: HHOOK::default(),
+            state,
+            // win_man,
+            // console_man
+        }
+    }
+
     pub fn init(&mut self) -> bool {
         let _ = win32::create_mutex(false, "slck_cmd_mutex");
         if win32::get_last_error() == ERROR_ALREADY_EXISTS {
@@ -43,8 +72,8 @@ impl App {
         let hwnd_main = self.main_win.create();
         GLOBAL.set_hwnd_main(hwnd_main);
 
-        self.recent_dirs.load();
-        self.msg_win.recent_dirs = self.recent_dirs.clone();
+        self.state.recent_dirs.load();
+        // self.msg_win.recent_dirs = self.recent_dirs.clone();
 
         let hwnd_msg = self.msg_win.create();
         GLOBAL.set_hwnd_msg(hwnd_msg);
@@ -90,7 +119,7 @@ impl App {
     }
 
     pub fn finalize(&mut self) {
-        self.recent_dirs.save();
+        self.state.recent_dirs.save();
         win32::unhook_widows_hook_ex(self.hhook_shell);
         self.tray_icon.destroy();
         self.msg_win.destroy();

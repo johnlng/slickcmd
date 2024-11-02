@@ -1,5 +1,4 @@
 use crate::startup_link::StartupLink;
-use crate::GLOBAL;
 use slickcmd_common::consts::{
     IDC_CHK_CD_COMPLETION, IDC_CHK_RUN_ON_STARTUP, IDC_MAX_RECENT_DIRS, IDC_MAX_RECENT_DIRS_SPIN,
     IDD_OPTIONS,
@@ -9,6 +8,7 @@ use slickcmd_common::{dlg, utils, win32};
 use windows::Win32::Foundation::*;
 use windows::Win32::UI::Controls::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
+use crate::global::GLOBAL;
 
 #[derive(Default)]
 pub struct OptionsDlg {

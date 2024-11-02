@@ -55,7 +55,7 @@ extern "system" fn ShlProc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT
     let shl_msg = GLOBAL.shl_msg();
 
     if hwnd_msg.is_invalid() {
-        hwnd_msg = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_msg"), None);
+        hwnd_msg = win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_msg"), None);
         GLOBAL.set_hwnd_msg(hwnd_msg);
     }
     if !hwnd_msg.is_invalid() {
@@ -69,7 +69,7 @@ extern "system" fn ShlProc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT
             b_attach_core = (ret.0 as u32) == 1
         } else {
             // using obsolete hwnd_msg?
-            hwnd_msg = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_msg"), None);
+            hwnd_msg = win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_msg"), None);
             if !hwnd_msg.is_invalid() {
                 let ret = win32::send_message(hwnd_msg, shl_msg, wparam, LPARAM::default());
                 if (ret.0 >> 32) as u32 != dw_hwnd {

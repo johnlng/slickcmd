@@ -14,6 +14,7 @@ use windows::Win32::System::Console::*;
 use windows::Win32::System::Diagnostics::Debug::*;
 use windows::Win32::System::Environment::*;
 use windows::Win32::System::LibraryLoader::*;
+use windows::Win32::System::Ole::*;
 use windows::Win32::System::ProcessStatus::*;
 use windows::Win32::System::SystemInformation::*;
 use windows::Win32::System::Threading::*;
@@ -218,7 +219,7 @@ pub fn get_module_file_name(hmodule: HMODULE) -> OsString {
 
 pub fn find_window_ex(
     hwnd_parent: HWND,
-    hwnd_after: Option<&HWND>,
+    hwnd_after: HWND,
     class_name: Option<&str>,
     window_name: Option<&str>,
 ) -> HWND {
@@ -443,11 +444,11 @@ pub fn get_console_mode(h_console_handle: HANDLE) -> (CONSOLE_MODE, bool) {
     unsafe {
         let mut mode = CONSOLE_MODE::default();
         if GetConsoleMode(h_console_handle, &mut mode as *mut CONSOLE_MODE).is_ok() {
-            return (mode, true);
+            (mode, true)
         } else {
             let err = get_last_error();
             log!("@ERR: {}", err.0);
-            return (mode, false);
+            (mode, false)
         }
     }
 }
@@ -812,6 +813,10 @@ pub fn get_tick_count() -> u32 {
     unsafe { GetTickCount() }
 }
 
+pub fn get_tick_count64() -> u64 {
+    unsafe { GetTickCount64() }
+}
+
 pub fn kill_timer(hwnd: HWND, id: usize) {
     unsafe {
         _ = KillTimer(hwnd, id);
@@ -1137,4 +1142,79 @@ pub fn set_console_ctrl_handler(handler: PHANDLER_ROUTINE, add: bool) -> bool {
 
 pub fn vk_key_scan(wc: u16) -> i16 {
     unsafe { VkKeyScanW(wc) }
+}
+pub fn get_console_title() -> String {
+    let mut buf = [0u16; 128];
+    let cch = unsafe { GetConsoleTitleW(&mut buf) };
+    String::from_utf16_lossy(&buf[..cch as usize])
+}
+
+pub fn safe_array_destroy(sa: *const SAFEARRAY) {
+    unsafe {
+        _ = SafeArrayDestroy(sa);
+    }
+}
+
+pub fn safe_array_lock(sa: *const SAFEARRAY) -> bool {
+    unsafe { SafeArrayLock(sa).is_ok() }
+}
+
+pub fn safe_array_unlock(sa: *const SAFEARRAY) -> bool {
+    unsafe { SafeArrayUnlock(sa).is_ok() }
+}
+
+pub fn post_thread_message(thread_id: u32, msg: u32, wparam: WPARAM, lparam: LPARAM) -> bool {
+    unsafe { PostThreadMessageW(thread_id, msg, wparam, lparam).is_ok() }
+}
+
+pub fn create_thread(
+    thread_proc: LPTHREAD_START_ROUTINE,
+    params: Option<*const c_void>,
+) -> (HANDLE, u32) {
+    unsafe {
+        let mut tid = 0u32;
+        let hthread = CreateThread(
+            None,
+            0,
+            thread_proc,
+            params,
+            THREAD_CREATION_FLAGS(0),
+            Some(&mut tid),
+        )
+        .unwrap_or_default();
+        (hthread, tid)
+    }
+}
+
+pub fn co_initialize_ex(coinit: COINIT) -> bool {
+    unsafe { CoInitializeEx(None, coinit).is_ok() }
+}
+
+pub fn get_message(msg: &mut MSG, hwnd: HWND) -> bool {
+    unsafe { GetMessageW(msg as _, hwnd, 0, 0).as_bool() }
+}
+
+pub fn create_event(manual_reset: bool, initial_state: bool) -> HANDLE {
+    unsafe { CreateEventW(None, manual_reset, initial_state, None).unwrap_or_default() }
+}
+
+pub fn set_event(hevent: HANDLE) -> bool {
+    unsafe { SetEvent(hevent).is_ok() }
+}
+
+pub fn reset_event(hevent: HANDLE) -> bool {
+    unsafe { ResetEvent(hevent).is_ok() }
+}
+
+pub fn msg_wait_for_multiple_objects(
+    handles: &[HANDLE],
+    wait_all: bool,
+    millis: u32,
+    wake_mask: QUEUE_STATUS_FLAGS,
+) -> WAIT_EVENT {
+    unsafe { MsgWaitForMultipleObjects(Some(handles), wait_all, millis, wake_mask) }
+}
+
+pub fn open_thread(access: THREAD_ACCESS_RIGHTS, inherit: bool, tid: u32) -> HANDLE {
+    unsafe { OpenThread(access, inherit, tid).unwrap_or_default() }
 }

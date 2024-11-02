@@ -1,5 +1,4 @@
 use crate::options_dlg::OptionsDlg;
-use crate::GLOBAL;
 use slickcmd_common::winproc::{wndproc, WinProc};
 use slickcmd_common::{consts::*, win32};
 use std::env;
@@ -10,6 +9,7 @@ use windows::{
     core::PCWSTR,
     Win32::{Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*},
 };
+use crate::global::GLOBAL;
 
 #[derive(Default)]
 pub struct MainWin {

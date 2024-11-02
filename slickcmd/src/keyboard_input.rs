@@ -1,10 +1,11 @@
-use crate::GLOBAL;
-use slickcmd_common::consts::WM_POST_ACTION;
+use crate::global::GLOBAL;
+use slickcmd_common::consts::{WM_CORE_SUPPRESS_INPUT_EVENT, WM_POST_ACTION};
 use slickcmd_common::win32;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
+use windows::Win32::UI::WindowsAndMessaging::HWND_MESSAGE;
 
 #[derive(Default)]
 pub struct KeyboardInput {
@@ -168,12 +169,13 @@ impl KeyboardInput {
         }
     }
 
-    pub fn send(&mut self) {
+    pub fn send(&mut self, suppress_core_event: bool) {
         let mut inputs = Vec::<INPUT>::new();
 
-        let has_key = self.inputs.iter().any(|x| {
-            !unsafe { x.Anonymous.ki }.dwFlags.contains(KEYEVENTF_UNICODE)
-        });
+        let has_key = self
+            .inputs
+            .iter()
+            .any(|x| !unsafe { x.Anonymous.ki }.dwFlags.contains(KEYEVENTF_UNICODE));
 
         let cur_ctrl_down = win32::get_async_key_state(VK_LCONTROL) < 0;
         let cur_alt_down = win32::get_async_key_state(VK_LMENU) < 0;
@@ -203,13 +205,34 @@ impl KeyboardInput {
                 Self::_key_down(VK_LSHIFT, &mut inputs);
             }
         }
+        if suppress_core_event {
+            let hwnd = win32::find_window_ex(
+                HWND_MESSAGE,
+                HWND::default(),
+                Some("slck_cmd_core_msg"),
+                None,
+            );
+            win32::send_message(
+                hwnd,
+                WM_CORE_SUPPRESS_INPUT_EVENT,
+                WPARAM(0),
+                LPARAM(0),
+            );
+            Self::_key_down(VK_BACK, &mut inputs);
+            Self::_key_up(VK_BACK, &mut inputs);
+        }
         win32::send_input(&inputs);
     }
 
-    pub fn post(self, hwnd_target: HWND) {
+    pub fn post(self, hwnd_target: HWND, suppress_core_event: bool) {
         POST_KEYBOARD_INPUTS.add(hwnd_target, self);
         let hwnd = GLOBAL.hwnd_msg();
-        win32::post_message(hwnd, WM_POST_ACTION, WPARAM(0), LPARAM(0));
+        let lparam = if suppress_core_event {
+            LPARAM(1)
+        } else {
+            LPARAM(0)
+        };
+        win32::post_message(hwnd, WM_POST_ACTION, WPARAM(0), lparam);
     }
 
     pub fn clear(&mut self) {

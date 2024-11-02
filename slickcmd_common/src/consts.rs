@@ -22,7 +22,7 @@ pub const NIN_SELECT: u32 = WM_USER;
 pub const NIN_KEYSELECT: u32 = NIN_SELECT|0x1;
 
 //
-pub const WM_SUPPRESS_CORE_KEY: u32 = WM_USER + 1001;
+pub const WM_CORE_SUPPRESS_INPUT_EVENT: u32 = WM_USER + 1001;
 pub const WM_CORE_KEYDOWN: u32 = WM_USER + 1002;
 pub const WM_CORE_KEYUP: u32 = WM_USER + 1003;
 pub const WM_NOTIFY_AC_LIST_CLOSED: u32 = WM_USER + 1004;
@@ -31,7 +31,7 @@ pub const WM_NOTIFY_AC_LIST_CLOSED: u32 = WM_USER + 1004;
 pub const WM_SHOW_MENU: u32 = WM_USER + 1005;
 
 //slickcmd
-pub const WM_CONSOLE_ACTIVATED: u32 = WM_USER + 4001;
+pub const WM_POST_CONSOLE_ACTIVATE: u32 = WM_USER + 4001;
 pub const WM_TRAY_CALLBACK: u32 = WM_USER + 4002;
 
 pub const WM_POST_ACTION: u32 = WM_USER + 4003;
@@ -47,6 +47,11 @@ pub const WM_MOUSEDOWN_SHOWING_ACL: u32 = WM_USER + 4006;
 pub const WM_SHOW_MENU_RESULT: u32 = WM_USER + 4007;
 pub const WM_HIST_WIN_DESTROYED: u32 = WM_USER + 4008;
 
+pub const WM_UIA_FOCUS_CHANGE: u32 = WM_USER + 4009;
+pub const WM_WT_CONSOLE_ACTIVATE: u32 = WM_USER + 4010;
+pub const WM_CLEAN_CONSOLES: u32 = WM_USER + 4011;
+
+pub const WM_GET_CONSOLE_BOUNDS: u32 = WM_USER + 4012;
 
 //
 pub const APP_TITLE: &str = "Slick Cmd";

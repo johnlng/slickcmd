@@ -1,10 +1,10 @@
 
-
-# Slick Cmd
-
 [![CI](https://github.com/johnlng/slickcmd/actions/workflows/ci.yml/badge.svg)](https://github.com/johnlng/slickcmd/actions)
 ![Static Badge](https://img.shields.io/badge/os-Windows-blue)
 ![GitHub Downloads](https://img.shields.io/github/downloads/johnlng/slickcmd/total)
+
+![Slick Cmd Highlights](docs/images/highlights.png)
+
 
 **Slick Cmd** is a lightweight utility designed to supercharge your Windows Command Prompt experience by making directory navigation, path completion, and command management more efficient. Slick Cmd runs quietly in your system tray, enabling you to access its powerful features through intuitive keyboard shortcuts.
 
@@ -41,26 +41,54 @@
 * **Operating System:** Windows 10 or above, 64-bit
 * **Shell Compatibility:** Classic Command Prompt(cmd.exe) or PowerShell(powershell.exe or pwsh.exe)
 
-## 📖 Installation & Getting Started
+## 📖 Installation
+
+> [!NOTE]
+> Before installation, please exit SlickCmd and close all running Command Prompts 
+> to allow the application binaries to be overwritten.
+
+### Install from GitHub Release
 
 1. **Download:** Get the latest version of Slick Cmd from the [Releases page](https://github.com/johnlng/slickcmd/releases).
 2. **Install:** Extract the release zip to a preferred installation folder on your local filesystem.
 3. **Launch:** Start Slick Cmd by double-clicking `slickcmd.exe`. A small icon will appear in your system tray, indicating it’s running.
-4. **Boost Your Productivity:** Open a command prompt window, use the keyboard shortcuts listed above to navigate directories and manage commands effortlessly!
 
-> [!NOTE]  
-> Windows Security might flag the downloaded binaries as a false positive due to the nature of the software. 
-> This is normal and doesn't indicate a security threat. 
-> If you're concerned, you can always build the project from the source code yourself.
+### Install with WinGet 
+I've submitted SlickCmd to the [Windows Package Manager Community Repository](https://github.com/microsoft/winget-pkgs)
+and it has passed validation. You can install SlickCmd using winget with the following command: 
+```
+winget install "Slick Cmd"
+```
+After installation, you may encounter issues starting SlickCmd from the command line directly 
+due to the Windows SmartScreen Filter, which can silently block unrecognized apps.
+To launch SlickCmd, follow these steps:
+1. Open Windows Explorer.
+2. Navigate to the following directory:
+```C:\Users\Your User Name\AppData\Local\Microsoft\WinGet\Links```
+3. Click on `slickcmd.exe` to run the application.
+
+Unfortunately, this means the winget installation is less convenient at this time.
 
 
-## 🛠️ Build from source
+### 🛠️ Install from source
 ```
 git clone https://github.com/johnlng/slickcmd.git
 cd slickcmd
 cargo build
 ```
 You can find the binaries in the target folder.
+
+## Verification
+After starting SlickCmd, Open a command prompt window and press `Alt + Up` 
+to see if you can navigate to the parent directory. 
+if you can, things should be working fine.  
+
+Note that "a command prompt window" can refer to any of the following:
+
+* A classic windows command prompt window (`cmd.exe`), 
+* A Windows PowerShell window (`powershell.exe`)
+* A PowerShell 7+ window (`pwsh.exe`), 
+* A Windows Terminal window running any of the above shells.
 
 ## 📜 License
 

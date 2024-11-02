@@ -1,10 +1,10 @@
-use crate::GLOBAL;
 use itertools::Itertools;
 use slickcmd_common::utils::iif;
 use slickcmd_common::{logd, utils, win32};
 use std::cell::RefCell;
 use std::path::Path;
 use std::{cmp, fs};
+use crate::global::GLOBAL;
 
 #[derive(Default)]
 pub struct CurDir {

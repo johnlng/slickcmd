@@ -71,7 +71,8 @@ impl MsgWin {
 
         win32::destroy_menu(hmenu);
 
-        let hwnd_app_msg = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_msg"), None);
+        let hwnd_app_msg =
+            win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_msg"), None);
 
         win32::post_message(
             hwnd_app_msg,
@@ -148,8 +149,14 @@ impl WinProc for MsgWin {
                     return LRESULT(0);
                 }
             }
-            WM_SUPPRESS_CORE_KEY => {
-                GLOBAL.set_suppress_hook(true);
+            WM_CORE_SUPPRESS_INPUT_EVENT => {
+                // let suppress_hook_count = wparam.0 as u32;
+                // if suppress_hook_count != 0 {
+                    // GLOBAL.set_suppress_input_event_count(GLOBAL.suppress_input_event_count() + suppress_hook_count);
+                // }
+                // else {
+                    GLOBAL.set_suppress_input_event(true);
+                // }
                 return LRESULT(0);
             }
             WM_CLOSE => {

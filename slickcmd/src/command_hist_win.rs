@@ -10,11 +10,11 @@ use windows::Win32::{
 
 use crate::command_hist::CommandHist;
 use crate::command_hist_list::CommandHistList;
-use crate::GLOBAL;
+use crate::global::GLOBAL;
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::winproc::{wndproc, WinProc};
 
-#[derive(Default)]
+// #[derive(Default)]
 pub struct CommandHistWin {
     pub hwnd: HWND,
 
@@ -22,10 +22,22 @@ pub struct CommandHistWin {
 
     pub font_info: FontInfo,
 
+    hwnd_console: HWND,
+
     list: CommandHistList,
 }
 
 impl CommandHistWin {
+    pub fn new(hwnd_console: HWND) -> CommandHistWin {
+        CommandHistWin {
+            hwnd: HWND::default(),
+            hists: Vec::new(),
+            font_info: FontInfo::default(),
+            hwnd_console,
+            list: CommandHistList::default(),
+        }
+    }
+
     pub fn create(&mut self, hwnd_owner: HWND) -> HWND {
         let window_class = "slck_cmd_command_hist";
         let wsz_class = win32::wsz_from_str(window_class);
@@ -169,7 +181,8 @@ impl WinProc for CommandHistWin {
                 self.hists.clear();
 
                 let hwnd_msg = GLOBAL.hwnd_msg();
-                let hwnd_console = win32::get_parent(self.hwnd);
+                // let hwnd_console = win32::get_parent(self.hwnd);
+                let hwnd_console = self.hwnd_console;
                 if win32::is_window(hwnd_console) {
                     let wparam = WPARAM(hwnd_console.0 as _);
                     win32::send_message(hwnd_msg, WM_HIST_WIN_DESTROYED, wparam, LPARAM(0));

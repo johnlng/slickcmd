@@ -17,7 +17,7 @@ fn main() -> Result<ExitCode> {
         return Ok(ExitCode::SUCCESS);
     }
 
-    let mut app = App::default();
+    let mut app = App::new();
 
     if !app.init() {
         return Ok(ExitCode::FAILURE);

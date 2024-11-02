@@ -1,4 +1,3 @@
-use crate::GLOBAL;
 use anyhow::Result;
 use slickcmd_common::{utils, win32};
 use std::path::Path;
@@ -8,6 +7,7 @@ use windows::core::{w, Interface, PCWSTR};
 use windows::Win32::Storage::FileSystem::WIN32_FIND_DATAW;
 use windows::Win32::System::Com::{IPersistFile, STGM_READ};
 use windows::Win32::UI::Shell::{FOLDERID_Startup, IShellLinkW, ShellLink, KF_FLAG_DEFAULT};
+use crate::global::GLOBAL;
 
 pub struct StartupLink();
 

@@ -22,7 +22,7 @@ impl Core {
 
     pub fn attach(&mut self, hwnd_target: HWND, kbdproc: HOOKPROC) -> LRESULT {
         GLOBAL.set_hwnd_target(hwnd_target);
-        GLOBAL.set_suppress_hook(false);
+        GLOBAL.set_suppress_input_event(false);
 
         APP_COMM.init();
 
@@ -55,15 +55,23 @@ impl Core {
     }
 
     pub fn kbd_proc(&mut self, code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+
         let vk = wparam.0 as u16;
         let dw_lparam = lparam.0 as u32;
         let alt_down = (dw_lparam & 0x20000000) != 0;
         let key_up = (dw_lparam & 0x80000000) != 0;
 
-        if GLOBAL.suppress_hook() {
-            if vk == VK_F12.0 {
+        if alt_down && win32::get_async_key_state(VK_SHIFT) < 0 {
+            return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+        }
+
+        if GLOBAL.suppress_input_event() {
+            // logd!("* input events suppressed {}.", vk);
+            if vk == VK_BACK.0 {
+                // logd!("* GOT VK_BACK.");
                 if key_up {
-                    GLOBAL.set_suppress_hook(false);
+                    // logd!("* input events resumed.");
+                    GLOBAL.set_suppress_input_event(false);
                 }
                 return LRESULT(1);
             }

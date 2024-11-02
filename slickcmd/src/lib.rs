@@ -1,5 +1,3 @@
-use crate::global::Global;
-
 pub mod app;
 pub mod command_hist;
 pub mod command_hist_list;
@@ -8,7 +6,6 @@ pub mod console;
 pub mod dir_complete;
 pub mod dir_man;
 pub mod global;
-pub mod key_hook_suppressor;
 pub mod keyboard_input;
 pub mod main_win;
 pub mod msg_win;
@@ -19,5 +16,7 @@ pub mod startup_link;
 pub mod tray_icon;
 pub mod error_log;
 pub mod manual;
-
-static GLOBAL: Global = Global::new();
+pub mod win_man;
+pub mod app_state;
+pub mod wt_focus_man;
+pub mod console_man;

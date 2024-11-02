@@ -1,6 +1,6 @@
 [package]
 name = "slickcmd"
-version = "0.1.2"
+version = "2.0.0"
 edition = "2021"
 
 [dependencies]
@@ -12,8 +12,10 @@ anyhow = "1.0.89"
 log = "0.4.22"
 simplelog = "^0.12.0"
 time = "0.3.36"
+faster-hex = "0.10.0"
+windows-core = "0.58.0"
 slickcmd_common = {path="../slickcmd_common"}
 
 [dependencies.windows]
 version = "0.58.0"
-features = ["Win32_Foundation", "Win32_System", "Win32_System_Console", "Win32_Graphics", "Win32_System_LibraryLoader", "Win32_UI", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_Security", "Win32_UI_Shell", "Win32_System_Com"]
+features = ["Win32_Foundation", "Win32_System", "Win32_System_Console", "Win32_Graphics", "Win32_System_LibraryLoader", "Win32_UI", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading", "Win32_Security", "Win32_UI_Shell", "Win32_System_Com", "Win32_UI_Accessibility", "implement"]

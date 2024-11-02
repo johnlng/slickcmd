@@ -1,9 +1,9 @@
 use crate::console::Console;
-use crate::key_hook_suppressor::KeyHookSuppressor;
 use slickcmd_common::{utils, win32};
 use windows::Win32::Foundation::*;
 use windows::Win32::System::Console::*;
-use windows::Win32::UI::WindowsAndMessaging::*;
+use windows::Win32::UI::Input::KeyboardAndMouse::VK_ESCAPE;
+use crate::keyboard_input::KeyboardInput;
 
 pub trait Shell {
     fn name(&self) -> String;
@@ -66,7 +66,6 @@ impl Shell for CmdShell {
 
     fn set_input(&self, console: &Console, input_text: &str) {
 
-        let _khs = KeyHookSuppressor::new(console.hwnd);
         let ca = console.new_console_attach(true);
 
         let wc_input_text: Vec<u16> = input_text.encode_utf16().collect();
@@ -163,12 +162,11 @@ impl Shell for PsShell {
         input.replace("`>> ", "")
     }
 
-    fn set_input(&self, console: &Console, input_text: &str) {
-        let _khs = KeyHookSuppressor::new(console.hwnd);
-        win32::send_message(console.hwnd, WM_CHAR, WPARAM('\x1b' as _), LPARAM(0));
-        let wcs = input_text.encode_utf16();
-        for wc in wcs {
-            win32::send_message(console.hwnd, WM_CHAR, WPARAM(wc as _), LPARAM(0));
-        }
+    fn set_input(&self, _console: &Console, input_text: &str) {
+        let mut ki = KeyboardInput::new();
+        ki.key_press(VK_ESCAPE);
+        ki.text(input_text);
+        ki.send(true);
+
     }
 }

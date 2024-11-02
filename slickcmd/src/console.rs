@@ -1,12 +1,11 @@
+use crate::app_state::AppState;
 use crate::command_hist::CommandHist;
 use crate::command_hist_win::CommandHistWin;
 use crate::dir_complete::DIR_COMPLETER;
 use crate::dir_man::CurDir;
-use crate::dir_man::RecentDirs;
-use crate::key_hook_suppressor::KeyHookSuppressor;
+use crate::global::GLOBAL;
 use crate::keyboard_input::KeyboardInput;
 use crate::shell::{CmdShell, PsShell, Shell};
-use crate::GLOBAL;
 use slickcmd_common::consts::*;
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::utils::iif;
@@ -22,14 +21,17 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 
 #[derive(Default)]
 pub struct Console {
+    app_state: Rc<AppState>,
+
     pub hwnd: HWND,
     pub pid: u32,
+
+    hwnd_term: HWND,
 
     hwnd_msg: HWND,
     shell: Box<dyn Shell>,
 
     cur_dir: CurDir,
-    recent_dirs: Rc<RecentDirs>,
 
     replacing_command: String,
 
@@ -97,9 +99,12 @@ impl ConsoleAttach {
         }
         if with_stdin {
             ctx.h_stdin = win32::get_std_handle(STD_INPUT_HANDLE);
-            win32::get_console_mode(ctx.h_stdin);
-            if ctx.h_stdin.is_invalid() {
-                logd!("invalid stdin?");
+            let (_, ok) = win32::get_console_mode(ctx.h_stdin);
+            if !ok {
+                logd!("oops??");
+                if ctx.h_stdin.is_invalid() {
+                    logd!("invalid stdin?");
+                }
             }
         }
 
@@ -131,14 +136,14 @@ impl Drop for ConsoleAttach {
 }
 
 impl Console {
-    pub fn new(hwnd: HWND, hwnd_msg: HWND, recent_dirs: Rc<RecentDirs>) -> Console {
+    pub fn new(hwnd: HWND, app_state: Rc<AppState>) -> Console {
         let (pid, _) = win32::get_window_thread_process_id(hwnd);
 
         let mut cur_dir = CurDir::default();
 
-        let recent_dirs2 = recent_dirs.clone();
+        let app_state2 = app_state.clone();
         cur_dir.on_set = Some(Box::new(move |dir| {
-            recent_dirs2.use_dir(dir);
+            app_state2.recent_dirs.use_dir(dir);
         }));
 
         //
@@ -158,12 +163,13 @@ impl Console {
         let command_hist = CommandHist::new(&shell.name(), 0);
 
         let console = Console {
+            app_state,
             hwnd,
+            hwnd_term: hwnd,
             cur_dir,
             pid,
-            hwnd_msg,
+            hwnd_msg: GLOBAL.hwnd_msg(),
             shell,
-            recent_dirs,
             command_hist,
             ..Default::default()
         };
@@ -179,8 +185,20 @@ impl Console {
         }
     }
 
+    pub fn check_valid(&self) -> bool {
+        win32::is_window(self.hwnd)
+    }
+
     pub fn on_activate(&mut self) {
         win32::register_hotkey(self.hwnd_msg, 1, MOD_CONTROL | MOD_NOREPEAT, u32::from('L'));
+
+        let hwnd_parent = win32::get_parent(self.hwnd);
+        if !hwnd_parent.is_invalid() {
+            self.hwnd_term = hwnd_parent;
+        }; //for wt
+
+        self.new_console_attach(true);
+        // self.new_console_attach(false); //?
 
         if !self.cur_dir.has_set() {
             self.update_cur_dir();
@@ -188,6 +206,7 @@ impl Console {
     }
 
     pub fn on_deactivate(&mut self) {
+        logd!("@ CONSOLE DEACTIVATE");
         if self.showing_ac_list {
             self.hide_ac_list();
         }
@@ -272,6 +291,7 @@ impl Console {
     }
 
     pub fn handle_key_up(&mut self, vk: VIRTUAL_KEY, alt_down: bool) -> bool {
+        // logd!("@KEY UP {}", vk.0);
         if vk == VK_RETURN {
             if self.manual_cd_completing {
                 self.manual_cd_completing = false;
@@ -340,7 +360,11 @@ impl Console {
         let items_joined = items.join("\n");
 
         let mut data = String::new();
-        let dim_info = self.read_dimension_info();
+
+        let bounds = self.get_console_bounds();
+
+        let size = (bounds.right - bounds.left, bounds.bottom - bounds.top);
+        let dim_info = self.read_dimension_info(size);
 
         let (prompt, input) = self.read_prompt_input(0, true);
         if input.len() < 3 {
@@ -358,7 +382,9 @@ impl Console {
             x: col as i32 * dim_info.cell_width,
             y: dim_info.cur_row_in_window * dim_info.cell_height,
         };
-        win32::client_to_screen(self.hwnd, &mut pt);
+        pt.x += bounds.left;
+        pt.y += bounds.top;
+        win32::client_to_screen(self.hwnd_term, &mut pt);
 
         data.push_str(&format!("{}\n{}\n{}\n", pt.x, pt.y, dim_info.cell_height));
 
@@ -415,14 +441,13 @@ impl Console {
             return;
         }
 
-        let _khs = KeyHookSuppressor::new(self.hwnd);
         let cmd = "cd ..";
 
         let mut ki = KeyboardInput::new();
         ki.escape();
         ki.text(cmd);
         ki.enter();
-        ki.send();
+        ki.send(true);
 
         //
         self.command_hist.add(cmd);
@@ -455,7 +480,7 @@ impl Console {
             self.hwnd_msg,
             WM_POST_ACTION,
             WPARAM(POST_ACTION_ALT_DOWN),
-            LPARAM(self.hwnd.0 as _),
+            LPARAM(self.hwnd_term.0 as _),
         );
     }
 
@@ -483,26 +508,44 @@ impl Console {
         }
     }
 
+    fn get_console_bounds(&self) -> RECT {
+        let lresult = win32::send_message(
+            self.hwnd_msg,
+            WM_GET_CONSOLE_BOUNDS,
+            WPARAM(self.hwnd_term.0 as _),
+            LPARAM(0),
+        );
+        utils::rect_from_u64(lresult.0 as _)
+    }
+
     fn on_alt_end(&mut self) {
+
+        let bounds = self.get_console_bounds();
+
         let mut pt = {
             let _ca = self.new_console_attach(false);
-            let dim_info = self.read_dimension_info();
+            let size = (bounds.right - bounds.left, bounds.bottom - bounds.top);
+            let dim_info = self.read_dimension_info(size);
             POINT {
                 x: (dim_info.cur_col_in_window + 1) * dim_info.cell_width + 4,
                 y: dim_info.cur_row_in_window * dim_info.cell_height,
             }
         };
 
-        win32::client_to_screen(self.hwnd, &mut pt);
+        let mut pt_console = POINT{x: bounds.left, y: bounds.top};
+        win32::client_to_screen(self.hwnd_term, &mut pt_console);
+        pt.x += pt_console.x;
+        pt.y += pt_console.y;
 
         let hmenu = win32::create_popup_menu();
 
-        let count = self.recent_dirs.count();
+        let recent_dirs = &self.app_state.recent_dirs;
+        let count = recent_dirs.count();
         let max_count = GLOBAL.options.max_recent_dirs();
         let mut no = 1u32;
         for n in (0..count).rev() {
             let c_no = char::from_digit(no, max_count + 1).unwrap_or(' ');
-            let item = format!("&{} {}\n", c_no, self.recent_dirs.at(n));
+            let item = format!("&{} {}\n", c_no, recent_dirs.at(n));
             win32::append_menu(hmenu, MF_STRING, 1000 + n as u16, Some(&item));
             no += 1;
             if no > max_count {
@@ -518,6 +561,7 @@ impl Console {
             );
         }
 
+        logd!("PT.X: {}, PT.Y: {}", pt.x, pt.y);
         let lparam = LPARAM((pt.x << 16 | pt.y) as isize);
         self.post_core_message(WM_SHOW_MENU, WPARAM(hmenu.0 as usize), lparam);
     }
@@ -525,19 +569,29 @@ impl Console {
     pub fn handle_show_menu_result(&mut self, cmd: i32) {
         let item_index = cmd - 1000;
         if item_index >= 0 {
-            let dir = self.recent_dirs.at(item_index as _);
+            let dir = self.app_state.recent_dirs.at(item_index as _);
             self.cur_dir.set(&dir);
             self.cd(&dir);
         }
     }
 
     fn post_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) {
-        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_core_msg"), None);
+        let hwnd = win32::find_window_ex(
+            HWND_MESSAGE,
+            HWND::default(),
+            Some("slck_cmd_core_msg"),
+            None,
+        );
         win32::post_message(hwnd, msg, wparam, lparam);
     }
 
     fn send_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
-        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_core_msg"), None);
+        let hwnd = win32::find_window_ex(
+            HWND_MESSAGE,
+            HWND::default(),
+            Some("slck_cmd_core_msg"),
+            None,
+        );
         win32::send_message(hwnd, msg, wparam, lparam)
     }
 
@@ -576,10 +630,10 @@ impl Console {
             width: 8,
             pitch_and_family: 54,
         };
-        let mut win = Box::new(CommandHistWin::default());
+        let mut win = Box::new(CommandHistWin::new(self.hwnd));
         win.hists = hists;
         win.font_info = font_info;
-        win.create(self.hwnd);
+        win.create(self.hwnd_term);
         self.command_hist_win = Some(win);
     }
 
@@ -593,7 +647,7 @@ impl Console {
 
             let mut ki = KeyboardInput::new();
             ki.enter();
-            ki.post(self.hwnd);
+            ki.post(self.hwnd_term, false);
 
             self.update_cur_dir_on_key_up = true;
 
@@ -623,24 +677,22 @@ impl Console {
             cmd.push('"');
         }
 
-        let _khs = KeyHookSuppressor::new(self.hwnd);
         let mut ki = KeyboardInput::new();
         ki.escape();
         ki.text(&cmd);
         ki.enter();
-        ki.send();
+        ki.send(true);
 
         //
         self.command_hist.add(&cmd);
     }
 
     pub fn clear(&self) {
-        let _khs = KeyHookSuppressor::new(self.hwnd);
         let mut ki = KeyboardInput::new();
         ki.escape();
         ki.text("cls");
         ki.enter();
-        ki.send();
+        ki.send(true);
     }
 
     pub fn update_cur_dir(&mut self) {
@@ -816,7 +868,7 @@ impl Console {
         self.shell.parse_prompt(line)
     }
 
-    fn read_dimension_info(&self) -> ConsoleDimensionInfo {
+    fn read_dimension_info(&self, console_size: (i32, i32)) -> ConsoleDimensionInfo {
         let mut info = ConsoleDimensionInfo::default();
         let ca = self.new_console_attach(false);
 
@@ -834,11 +886,8 @@ impl Console {
         info.window_col_count = (csbi.srWindow.Right - csbi.srWindow.Left) as _;
         info.window_row_count = (csbi.srWindow.Bottom - csbi.srWindow.Top) as _;
 
-        let mut rc_client = RECT::default();
-        win32::get_client_rect(self.hwnd, &mut rc_client);
-
-        let client_width = rc_client.right - rc_client.left;
-        let client_height = rc_client.bottom - rc_client.top;
+        let client_width = console_size.0;
+        let client_height = console_size.1;
 
         info.cell_width = (client_width as f64 / info.window_col_count as f64).floor() as _;
         info.cell_height = (client_height as f64 / info.window_row_count as f64).floor() as _;
@@ -853,16 +902,15 @@ impl Console {
     pub fn use_command(&mut self, command: &str, exec_now: bool) {
         //scope
         {
-            let _khs = KeyHookSuppressor::new(self.hwnd);
             let mut ki = KeyboardInput::new();
             ki.escape();
             ki.text(command);
-            ki.send();
+            ki.send(true);
         }
         if exec_now {
             let mut ki = KeyboardInput::new();
             ki.enter();
-            ki.post(self.hwnd);
+            ki.post(self.hwnd_term, false);
         }
     }
 

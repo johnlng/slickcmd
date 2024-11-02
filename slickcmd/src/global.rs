@@ -1,8 +1,7 @@
-use std::cell::{Cell};
-
-use slickcmd_common::win32;
-use windows::Win32::Foundation::{HINSTANCE, HWND};
 use crate::options::Options;
+use slickcmd_common::win32;
+use std::cell::Cell;
+use windows::Win32::Foundation::{HINSTANCE, HWND};
 
 #[derive(Default)]
 pub struct Global {
@@ -12,13 +11,16 @@ pub struct Global {
     hwnd_msg: Cell<HWND>,
 
     pub options: Options,
+
 }
 
 unsafe impl Send for Global{}
 unsafe impl Sync for Global{}
 
+pub static GLOBAL: Global = Global::new();
+
 impl Global {
-    
+
     pub const fn new() -> Global {
         unsafe { core::mem::zeroed() }
     }

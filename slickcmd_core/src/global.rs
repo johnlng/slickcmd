@@ -14,7 +14,7 @@ pub struct Global {
 
     hhook: AtomicUsize,
 
-    suppress_hook: AtomicBool,
+    suppress_input_event: AtomicBool,
 
     showing_acl: AtomicBool,
 
@@ -59,12 +59,12 @@ impl Global {
         self.hhook.store(value.0 as usize, Relaxed);
     }
 
-    pub fn suppress_hook(&self) -> bool {
-        self.suppress_hook.load(Relaxed)
+    pub fn suppress_input_event(&self) -> bool {
+        self.suppress_input_event.load(Relaxed)
     }
 
-    pub fn set_suppress_hook(&self, value: bool) {
-        self.suppress_hook.store(value, Relaxed);
+    pub fn set_suppress_input_event(&self, value: bool) {
+        self.suppress_input_event.store(value, Relaxed);
     }
 
     pub fn showing_acl(&self) -> bool {
