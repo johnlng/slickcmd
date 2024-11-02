@@ -100,3 +100,7 @@ I’d love to hear your thoughts! If you have suggestions, feature requests, or 
 
 If you like the project, please consider giving it a ⭐ and sharing it with others to show your support!
 
+
+## Acknowledgments
+
+* The keyboard button image used in this project is sourced from [AutoHotKey](https://github.com/AutoHotkey/AutoHotkey)
