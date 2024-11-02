@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.0.0] - 2024-11-2
+### Added
+- Windows Terminal support.
+
 
 ## [0.1.2] - 2024-10-14
 ### Fixed
