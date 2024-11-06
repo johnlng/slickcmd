@@ -99,13 +99,13 @@ impl WinMan {
         true
     }
 
-    pub fn get_console_bounds(&self, hwnd_term: usize) -> RECT {
+    pub fn get_console_bounds(hwnd_term: HWND) -> RECT { //client coordinates in term window
         let mut rect = RECT::default();
-        if hwnd_term == WtFocusMan::hwnd_wt() {
+        if hwnd_term.0 as usize == WtFocusMan::hwnd_wt() {
             rect = WtFocusMan::get_console_bounds();
         }
         else {
-            win32::get_client_rect(HWND(hwnd_term as _), &mut rect);
+            win32::get_client_rect(hwnd_term, &mut rect);
         }
         rect
     }

@@ -51,7 +51,6 @@ pub const WM_UIA_FOCUS_CHANGE: u32 = WM_USER + 4009;
 pub const WM_WT_CONSOLE_ACTIVATE: u32 = WM_USER + 4010;
 pub const WM_CLEAN_CONSOLES: u32 = WM_USER + 4011;
 
-pub const WM_GET_CONSOLE_BOUNDS: u32 = WM_USER + 4012;
 
 //
 pub const APP_TITLE: &str = "Slick Cmd";

@@ -127,12 +127,6 @@ impl WinProc for MsgWin {
                 self.console_man.borrow_mut().clean();
             }
 
-            WM_GET_CONSOLE_BOUNDS => {
-                let hwnd_term = wparam.0;
-                let rect = self.win_man.borrow().get_console_bounds(hwnd_term);
-                return LRESULT(utils::rect_to_u64(rect) as _);
-            }
-
             WM_POST_CONSOLE_ACTIVATE => {
                 let hwnd_console = wparam.0;
                 self.console_man.borrow_mut().on_activate(hwnd_console);

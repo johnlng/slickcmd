@@ -316,6 +316,10 @@ pub fn get_async_key_state(vk: VIRTUAL_KEY) -> i16 {
     unsafe { GetAsyncKeyState(vk.0 as i32) }
 }
 
+pub fn get_key_state(vk: VIRTUAL_KEY) -> i16 {
+    unsafe { GetKeyState(vk.0 as i32) }
+}
+
 pub fn get_class_name(hwnd: HWND) -> String {
     const BUF_SIZE: usize = MAX_PATH as _;
     let mut buf = [0u16; BUF_SIZE];
@@ -1217,4 +1221,22 @@ pub fn msg_wait_for_multiple_objects(
 
 pub fn open_thread(access: THREAD_ACCESS_RIGHTS, inherit: bool, tid: u32) -> HANDLE {
     unsafe { OpenThread(access, inherit, tid).unwrap_or_default() }
+}
+
+pub fn co_uninitialize() {
+    unsafe { CoUninitialize() }
+}
+
+pub fn find_close(hfind: HANDLE) {
+    unsafe { _= FindClose(hfind) };
+}
+
+pub fn get_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX) -> i32 {
+    unsafe { GetWindowLongW(hwnd, index) }
+}
+
+pub fn set_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX, value: i32) {
+    unsafe {
+        SetWindowLongW(hwnd, index, value);
+    }
 }

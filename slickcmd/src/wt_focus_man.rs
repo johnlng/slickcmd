@@ -22,8 +22,7 @@ struct WtConsoleInfo {
 static CONSOLE_INFOS_MAP: LazyLock<Mutex<HashMap<usize, Vec<WtConsoleInfo>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new())); //keyed by wt hwnd
 
-static CONSOLE_BOUNDS_MAP: LazyLock<Mutex<HashMap<usize, RECT>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new())); //keyed by console hwnd
+static CUR_CONSOLE_BOUNDS: Mutex<RECT> = Mutex::new(RECT{left: 0, top: 0, right: 0, bottom: 0});
 
 static HWND_WT: AtomicUsize = AtomicUsize::new(0);
 static HWND_CUR_CONSOLE: AtomicUsize = AtomicUsize::new(0);
@@ -57,10 +56,7 @@ impl<'a> WtFocusMan<'a> {
     }
 
     pub fn get_console_bounds() -> RECT {
-        let map = CONSOLE_BOUNDS_MAP.lock().unwrap();
-        let hwnd_console = HWND_CUR_CONSOLE.load(Ordering::Relaxed);
-        let bounds = map.get(&hwnd_console).copied();
-        bounds.unwrap_or_default()
+        *CUR_CONSOLE_BOUNDS.lock().unwrap()
     }
 
     pub fn new(uia: &'a IUIAutomation, hwnd_wt: usize) -> WtFocusMan {
@@ -97,8 +93,7 @@ impl<'a> WtFocusMan<'a> {
             if prev_console_index != self.focused_console_index {
                 if self.focused_console_index == -1 {
                     self.notify_console_activate(0);
-                }
-                else {
+                } else {
                     let info = &self.console_infos[self.focused_console_index as usize];
                     self.notify_console_activate(info.hwnd);
                 }
@@ -124,20 +119,34 @@ impl<'a> WtFocusMan<'a> {
         console.rt_id.clone()
     }
 
-    fn save_console_bounds(&self, hwnd: usize, el: &IUIAutomationElement) {
+    fn save_cur_console_bounds(&self, el: &IUIAutomationElement) {
         logd!("@ save console bounds");
         let bounds = unsafe { el.CurrentBoundingRectangle() }.unwrap_or_default();
-        let mut map = CONSOLE_BOUNDS_MAP.lock().unwrap();
+        const PADDING: i32 = 8;
+        const VSB_WIDTH: i32 = 16;
+        let bounds = RECT{
+            left: bounds.left + PADDING,
+            top: bounds.top + PADDING,
+            right: bounds.right - PADDING - VSB_WIDTH,
+            bottom: bounds.bottom - PADDING,
+        };
 
-        let mut rc_wt = RECT::default();
-        win32::get_window_rect(HWND(self.hwnd_wt as _), &mut rc_wt);
+        let mut pt_client_on_screen = POINT::default();
+        win32::client_to_screen(HWND(self.hwnd_wt as _), &mut pt_client_on_screen);
+
+        let mut rc = RECT::default();
+        win32::get_client_rect(HWND(self.hwnd_wt as _), &mut rc);
+
+        let mut ptxx = POINT{x: rc.left, y: rc.top};
+        win32::client_to_screen(HWND(self.hwnd_wt as _), &mut ptxx);
 
         let mut rect = RECT::default();
-        rect.left = bounds.left - rc_wt.left;
-        rect.top = bounds.top - rc_wt.top;
+        rect.left = bounds.left - pt_client_on_screen.x;
+        rect.top = bounds.top - pt_client_on_screen.y;
         rect.right = rect.left + bounds.right - bounds.left;
         rect.bottom = rect.top + bounds.bottom - bounds.top;
-        map.insert(hwnd, rect);
+
+        *CUR_CONSOLE_BOUNDS.lock().unwrap() = rect;
     }
 
     fn set_focused_console(&mut self, el: &IUIAutomationElement) -> isize {
@@ -147,7 +156,7 @@ impl<'a> WtFocusMan<'a> {
 
         for (index, console) in self.console_infos.iter().enumerate() {
             if console.rt_id == rt_id {
-                self.save_console_bounds(console.hwnd, el);
+                self.save_cur_console_bounds(el);
                 HWND_CUR_CONSOLE.store(console.hwnd, Ordering::Relaxed);
                 return index as _;
             }
@@ -157,7 +166,7 @@ impl<'a> WtFocusMan<'a> {
             return -1;
         }
 
-        self.save_console_bounds(hwnd, el);
+        self.save_cur_console_bounds(el);
         self.console_infos.push(WtConsoleInfo { rt_id, hwnd });
         HWND_CUR_CONSOLE.store(hwnd, Ordering::Relaxed);
         (self.console_infos.len() - 1) as _
@@ -375,5 +384,6 @@ extern "system" fn wt_thread_proc(lp_param: *mut c_void) -> u32 {
     }
     wt_focus_man.dispose();
     _ = unsafe { uia.RemoveFocusChangedEventHandler(&handler) };
+    win32::co_uninitialize();
     0u32
 }

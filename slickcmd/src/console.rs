@@ -18,6 +18,7 @@ use windows::Win32::System::Console::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
+use crate::win_man::WinMan;
 
 #[derive(Default)]
 pub struct Console {
@@ -509,13 +510,7 @@ impl Console {
     }
 
     fn get_console_bounds(&self) -> RECT {
-        let lresult = win32::send_message(
-            self.hwnd_msg,
-            WM_GET_CONSOLE_BOUNDS,
-            WPARAM(self.hwnd_term.0 as _),
-            LPARAM(0),
-        );
-        utils::rect_from_u64(lresult.0 as _)
+        WinMan::get_console_bounds(self.hwnd_term)
     }
 
     fn on_alt_end(&mut self) {

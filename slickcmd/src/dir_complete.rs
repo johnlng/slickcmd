@@ -84,6 +84,8 @@ impl DirCompleter {
                 break;
             }
         }
+        win32::find_close(hfind);
+
         items.sort_by(|a, b| {
             let cmp = a.1.cmp(&b.1);
             if cmp == Equal {
