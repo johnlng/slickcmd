@@ -10,7 +10,7 @@ static HWND_MSG_VAL: AtomicIsize = AtomicIsize::new(0);
 pub fn log(msg: &str) {
     let mut hwnd_msg_val = HWND_MSG_VAL.load(Relaxed);
     if hwnd_msg_val == 0 {
-        let hwnd = win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_log"), None);
+        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_log"), None);
         hwnd_msg_val = if hwnd.is_invalid() { -1 } else { hwnd.0 as _ };
         HWND_MSG_VAL.store(hwnd_msg_val, Relaxed);
     }

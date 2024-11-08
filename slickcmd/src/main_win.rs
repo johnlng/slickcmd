@@ -113,8 +113,12 @@ impl MainWin {
 }
 
 impl WinProc for MainWin {
-    fn wndproc(&mut self, window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    fn wndproc(&mut self, hwnd: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         match message {
+            WM_DPICHANGED => {
+                GLOBAL.set_dpi(win32::get_dpi_for_window(self.hwnd));
+                LRESULT(0)
+            }
             WM_TRAY_CALLBACK => {
                 self.process_tray_callback(wparam, lparam);
                 LRESULT(0)
@@ -148,7 +152,7 @@ impl WinProc for MainWin {
             }
             WM_PAINT => {
                 unsafe {
-                    _ = ValidateRect(window, None);
+                    _ = ValidateRect(hwnd, None);
                 }
                 LRESULT(0)
             }
@@ -160,7 +164,7 @@ impl WinProc for MainWin {
                 win32::post_quit_message(0);
                 LRESULT(0)
             }
-            _ => unsafe { DefWindowProcW(window, message, wparam, lparam) },
+            _ => unsafe { DefWindowProcW(hwnd, message, wparam, lparam) },
         }
     }
 }

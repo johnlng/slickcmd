@@ -14,6 +14,7 @@ use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 use windows::Win32::Foundation::*;
+use windows::Win32::UI::HiDpi::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 // #[derive(Default)]
@@ -60,6 +61,9 @@ impl App {
     }
 
     pub fn init(&mut self) -> bool {
+
+        win32::set_process_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
         let _ = win32::create_mutex(false, "slck_cmd_mutex");
         if win32::get_last_error() == ERROR_ALREADY_EXISTS {
             return false;
@@ -71,6 +75,7 @@ impl App {
 
         let hwnd_main = self.main_win.create();
         GLOBAL.set_hwnd_main(hwnd_main);
+        GLOBAL.set_dpi(win32::get_dpi_for_window(hwnd_main));
 
         self.state.recent_dirs.load();
         // self.msg_win.recent_dirs = self.recent_dirs.clone();
@@ -139,4 +144,11 @@ impl App {
         self.hhook_shell = hhook;
         true
     }
+
+    //utils
+
+    pub fn dpi_aware_value(value: i32) -> i32 {
+        win32::mul_div(value, GLOBAL.dpi() as _, USER_DEFAULT_SCREEN_DPI as _)
+    }
+
 }

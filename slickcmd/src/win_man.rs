@@ -51,7 +51,7 @@ impl WinMan {
 
         let hwnd_core_msg = win32::find_window_ex(
             HWND_MESSAGE,
-            HWND::default(),
+            None,
             Some("slck_cmd_core_msg"),
             None,
         );

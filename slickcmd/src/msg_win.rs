@@ -192,7 +192,7 @@ impl WinProc for MsgWin {
                 let hwnd_parent = win32::get_desktop_window();
                 let class_name = "slck_cmd_ac_list";
                 let hwnd_acl =
-                    win32::find_window_ex(hwnd_parent, HWND::default(), Some(class_name), None);
+                    win32::find_window_ex(hwnd_parent, None, Some(class_name), None);
                 let mut rect = RECT::default();
                 win32::get_window_rect(hwnd_acl, &mut rect);
                 if !win32::pt_in_rect(&rect, pt) {

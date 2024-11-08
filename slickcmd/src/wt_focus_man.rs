@@ -3,6 +3,7 @@ use slickcmd_common::consts::{WM_UIA_FOCUS_CHANGE, WM_WT_CONSOLE_ACTIVATE};
 use slickcmd_common::{logd, win32};
 use std::collections::{HashMap, HashSet};
 use std::ffi::c_void;
+use std::sync::atomic::Ordering::Relaxed;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use std::sync::{LazyLock, Mutex};
 use std::{iter, mem, slice};
@@ -12,6 +13,7 @@ use windows::Win32::System::Com::*;
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows_core::implement;
+use crate::app::App;
 
 #[derive(Clone)]
 struct WtConsoleInfo {
@@ -22,7 +24,12 @@ struct WtConsoleInfo {
 static CONSOLE_INFOS_MAP: LazyLock<Mutex<HashMap<usize, Vec<WtConsoleInfo>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new())); //keyed by wt hwnd
 
-static CUR_CONSOLE_BOUNDS: Mutex<RECT> = Mutex::new(RECT{left: 0, top: 0, right: 0, bottom: 0});
+static CUR_CONSOLE_BOUNDS: Mutex<RECT> = Mutex::new(RECT {
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+});
 
 static HWND_WT: AtomicUsize = AtomicUsize::new(0);
 static HWND_CUR_CONSOLE: AtomicUsize = AtomicUsize::new(0);
@@ -62,6 +69,7 @@ impl<'a> WtFocusMan<'a> {
     pub fn new(uia: &'a IUIAutomation, hwnd_wt: usize) -> WtFocusMan {
         let mut console_infos_map = CONSOLE_INFOS_MAP.lock().unwrap();
         let console_infos = console_infos_map.remove(&hwnd_wt).unwrap_or_default();
+
         WtFocusMan {
             uia,
             hwnd_wt,
@@ -120,15 +128,14 @@ impl<'a> WtFocusMan<'a> {
     }
 
     fn save_cur_console_bounds(&self, el: &IUIAutomationElement) {
-        logd!("@ save console bounds");
         let bounds = unsafe { el.CurrentBoundingRectangle() }.unwrap_or_default();
-        const PADDING: i32 = 8;
-        const VSB_WIDTH: i32 = 16;
-        let bounds = RECT{
-            left: bounds.left + PADDING,
-            top: bounds.top + PADDING,
-            right: bounds.right - PADDING - VSB_WIDTH,
-            bottom: bounds.bottom - PADDING,
+        let padding: i32 = App::dpi_aware_value(8);
+        let vsb_width: i32 = App::dpi_aware_value(16);
+        let bounds = RECT {
+            left: bounds.left + padding,
+            top: bounds.top + padding,
+            right: bounds.right - padding - vsb_width,
+            bottom: bounds.bottom - padding,
         };
 
         let mut pt_client_on_screen = POINT::default();
@@ -136,9 +143,6 @@ impl<'a> WtFocusMan<'a> {
 
         let mut rc = RECT::default();
         win32::get_client_rect(HWND(self.hwnd_wt as _), &mut rc);
-
-        let mut ptxx = POINT{x: rc.left, y: rc.top};
-        win32::client_to_screen(HWND(self.hwnd_wt as _), &mut ptxx);
 
         let mut rect = RECT::default();
         rect.left = bounds.left - pt_client_on_screen.x;
@@ -150,7 +154,10 @@ impl<'a> WtFocusMan<'a> {
     }
 
     fn set_focused_console(&mut self, el: &IUIAutomationElement) -> isize {
-        let psa_rt_id = unsafe { el.GetRuntimeId() }.unwrap();
+        let psa_rt_id = match unsafe { el.GetRuntimeId() } {
+            Err(_) => return -1,
+            Ok(value) => value,
+        };
         let rt_id = rt_id_to_string(psa_rt_id);
         win32::safe_array_destroy(psa_rt_id);
 
@@ -168,7 +175,7 @@ impl<'a> WtFocusMan<'a> {
 
         self.save_cur_console_bounds(el);
         self.console_infos.push(WtConsoleInfo { rt_id, hwnd });
-        HWND_CUR_CONSOLE.store(hwnd, Ordering::Relaxed);
+        HWND_CUR_CONSOLE.store(hwnd, Relaxed);
         (self.console_infos.len() - 1) as _
     }
 
@@ -181,7 +188,7 @@ impl<'a> WtFocusMan<'a> {
         loop {
             hwnd = win32::find_window_ex(
                 HWND::default(),
-                hwnd_after,
+                Some(hwnd_after),
                 Some("PseudoConsoleWindow"),
                 None,
             );

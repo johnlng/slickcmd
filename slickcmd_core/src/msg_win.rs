@@ -72,7 +72,7 @@ impl MsgWin {
         win32::destroy_menu(hmenu);
 
         let hwnd_app_msg =
-            win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_msg"), None);
+            win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_msg"), None);
 
         win32::post_message(
             hwnd_app_msg,

@@ -93,7 +93,7 @@ impl Core {
                 || vk == VK_TAB.0
             {
                 let msg = if key_up { WM_KEYUP } else { WM_KEYDOWN };
-                let ret =win32::send_message(acl.hwnd, msg, WPARAM(vk as _), LPARAM(0));
+                let ret = win32::send_message(acl.hwnd, msg, WPARAM(vk as _), LPARAM(0));
                 if ret.0 == 0 {
                     return LRESULT(1);
                 }

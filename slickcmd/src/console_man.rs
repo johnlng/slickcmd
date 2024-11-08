@@ -66,6 +66,7 @@ impl ConsoleMan {
         if let Some(console) = &self.cur_console {
             let cur_hwnd = console.borrow().hwnd.0 as usize;
             if cur_hwnd == hwnd {
+                console.borrow_mut().on_activate();
                 return;
             } else {
                 self._on_deactivate(cur_hwnd);

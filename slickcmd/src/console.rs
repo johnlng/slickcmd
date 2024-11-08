@@ -18,6 +18,7 @@ use windows::Win32::System::Console::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
+use crate::app::App;
 use crate::win_man::WinMan;
 
 #[derive(Default)]
@@ -46,6 +47,7 @@ pub struct Console {
     showing_ac_list: bool,
     update_cur_dir_on_key_up: bool,
     manual_cd_completing: bool,
+
 }
 
 #[derive(Default)]
@@ -198,12 +200,13 @@ impl Console {
             self.hwnd_term = hwnd_parent;
         }; //for wt
 
-        self.new_console_attach(true);
+        let _ca = self.new_console_attach(true);
         // self.new_console_attach(false); //?
 
         if !self.cur_dir.has_set() {
             self.update_cur_dir();
         }
+
     }
 
     pub fn on_deactivate(&mut self) {
@@ -292,7 +295,6 @@ impl Console {
     }
 
     pub fn handle_key_up(&mut self, vk: VIRTUAL_KEY, alt_down: bool) -> bool {
-        // logd!("@KEY UP {}", vk.0);
         if vk == VK_RETURN {
             if self.manual_cd_completing {
                 self.manual_cd_completing = false;
@@ -352,12 +354,37 @@ impl Console {
         self.send_core_message(WM_SETTEXT, WPARAM(3), LPARAM(0));
     }
 
+    fn get_font_info(&self, dim_info: &ConsoleDimensionInfo) -> FontInfo {
+        let ca = self.new_console_attach(false);
+        let mut cfi = CONSOLE_FONT_INFOEX::default();
+        cfi.cbSize = size_of::<CONSOLE_FONT_INFOEX>() as _;
+        if !win32::get_current_console_font_ex(ca.h_stdout, false, &mut cfi) {
+            logd!("get console font failed.");
+        }
+        let mut fi = FontInfo::default();
+        fi.width = App::dpi_aware_value(cfi.dwFontSize.X as _);
+        fi.height = App::dpi_aware_value(cfi.dwFontSize.Y as _);
+
+        fi.pitch_and_family = cfi.FontFamily as _;
+
+        if cfi.FontWeight == 0 { //wt?
+            fi.name = "Consolas".into();
+            fi.width = dim_info.cell_width;
+            fi.height = dim_info.cell_height;
+        }
+        else {
+            let wsz_face_name = U16CString::from_vec_truncate(cfi.FaceName);
+            fi.name = wsz_face_name.to_string_lossy();
+        }
+        fi
+    }
+
     pub fn show_ac_list(&mut self, items: &[String]) -> LRESULT {
         if self.showing_ac_list {
             logd!("(already showing ac_list)");
         }
         self.showing_ac_list = true;
-        let ca = self.new_console_attach(false);
+
         let items_joined = items.join("\n");
 
         let mut data = String::new();
@@ -389,18 +416,13 @@ impl Console {
 
         data.push_str(&format!("{}\n{}\n{}\n", pt.x, pt.y, dim_info.cell_height));
 
-        let mut cfi = CONSOLE_FONT_INFOEX::default();
-        cfi.cbSize = size_of::<CONSOLE_FONT_INFOEX>() as _;
-        if !win32::get_current_console_font_ex(ca.h_stdout, false, &mut cfi) {
-            logd!("get console font failed.");
-        }
-        let wsz_face_name = U16CString::from_vec_truncate(cfi.FaceName);
-        data.push_str(&wsz_face_name.to_string_lossy());
+        let fi = self.get_font_info(&dim_info);
+        data.push_str(&fi.name);
         data.push('\n');
 
         data.push_str(&format!(
             "{}\n{}\n{}\n",
-            cfi.dwFontSize.Y, cfi.dwFontSize.X, cfi.FontFamily
+            fi.height, fi.width, fi.pitch_and_family
         ));
 
         data.push_str(&input);
@@ -573,7 +595,7 @@ impl Console {
     fn post_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) {
         let hwnd = win32::find_window_ex(
             HWND_MESSAGE,
-            HWND::default(),
+            None,
             Some("slck_cmd_core_msg"),
             None,
         );
@@ -583,7 +605,7 @@ impl Console {
     fn send_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         let hwnd = win32::find_window_ex(
             HWND_MESSAGE,
-            HWND::default(),
+            None,
             Some("slck_cmd_core_msg"),
             None,
         );

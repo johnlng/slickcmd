@@ -9,6 +9,7 @@ use windows::Win32::{
     Foundation::*, Graphics::Gdi::*, UI::Controls::*, UI::Input::KeyboardAndMouse::*,
     UI::WindowsAndMessaging::*,
 };
+use crate::app::App;
 use crate::global::GLOBAL;
 
 #[derive(Default, Clone)]
@@ -83,8 +84,8 @@ impl CommandHistList {
         self.hwnd = hwnd;
 
         let mut lf = LOGFONTW::default();
-        lf.lfWidth = font_info.width;
-        lf.lfHeight = font_info.height;
+        lf.lfWidth = App::dpi_aware_value(font_info.width);
+        lf.lfHeight = App::dpi_aware_value(font_info.height);
         lf.lfPitchAndFamily = font_info.pitch_and_family;
         lf.lfCharSet = DEFAULT_CHARSET;
 

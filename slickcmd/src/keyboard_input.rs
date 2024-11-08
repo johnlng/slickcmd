@@ -208,7 +208,7 @@ impl KeyboardInput {
         if suppress_core_event {
             let hwnd = win32::find_window_ex(
                 HWND_MESSAGE,
-                HWND::default(),
+                None,
                 Some("slck_cmd_core_msg"),
                 None,
             );

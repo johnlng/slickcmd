@@ -10,6 +10,8 @@ pub struct Global {
     hwnd_main: Cell<HWND>,
     hwnd_msg: Cell<HWND>,
 
+    dpi: Cell<u32>,
+
     pub options: Options,
 
 }
@@ -52,4 +54,11 @@ impl Global {
         self.hwnd_msg.set(hwnd_msg);
     }
 
+    pub fn dpi(&self) -> u32 {
+        self.dpi.get()
+    }
+
+    pub fn set_dpi(&self, dpi: u32) {
+        self.dpi.set(dpi);
+    }
 }

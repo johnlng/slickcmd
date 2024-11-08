@@ -26,7 +26,7 @@ impl AppComm {
     }
 
     pub fn init(&self) {
-        let hwnd = win32::find_window_ex(HWND_MESSAGE, HWND::default(), Some("slck_cmd_msg"), None);
+        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_msg"), None);
         self.set_hwnd(hwnd);
     }
 

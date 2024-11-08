@@ -20,6 +20,9 @@ use windows::Win32::System::SystemInformation::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::System::WindowsProgramming::*;
 use windows::Win32::UI::Controls::*;
+use windows::Win32::UI::HiDpi::{
+    GetDpiForWindow, SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT,
+};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
@@ -219,7 +222,7 @@ pub fn get_module_file_name(hmodule: HMODULE) -> OsString {
 
 pub fn find_window_ex(
     hwnd_parent: HWND,
-    hwnd_after: HWND,
+    hwnd_after: Option<HWND>,
     class_name: Option<&str>,
     window_name: Option<&str>,
 ) -> HWND {
@@ -244,8 +247,13 @@ pub fn find_window_ex(
     }
 
     unsafe {
-        FindWindowExW(hwnd_parent, hwnd_after, pwsz_class_name, pwsz_window_name)
-            .unwrap_or_default()
+        FindWindowExW(
+            hwnd_parent,
+            hwnd_after.as_ref(),
+            pwsz_class_name,
+            pwsz_window_name,
+        )
+        .unwrap_or_default()
     }
 }
 
@@ -1228,15 +1236,17 @@ pub fn co_uninitialize() {
 }
 
 pub fn find_close(hfind: HANDLE) {
-    unsafe { _= FindClose(hfind) };
+    unsafe { _ = FindClose(hfind) };
 }
 
-pub fn get_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX) -> i32 {
-    unsafe { GetWindowLongW(hwnd, index) }
+pub fn set_process_dpi_awareness_context(context: DPI_AWARENESS_CONTEXT) -> bool {
+    unsafe { SetProcessDpiAwarenessContext(context).is_ok() }
 }
 
-pub fn set_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX, value: i32) {
-    unsafe {
-        SetWindowLongW(hwnd, index, value);
-    }
+pub fn get_dpi_for_window(hwnd: HWND) -> u32 {
+    unsafe { GetDpiForWindow(hwnd) }
+}
+
+pub fn mul_div(number: i32, numerator: i32, denominator: i32) -> i32 {
+    unsafe { MulDiv(number, numerator, denominator) }
 }
