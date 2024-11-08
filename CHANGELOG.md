@@ -1,6 +1,14 @@
 # Changelog
 
-## [2.0.0] - 2024-11-2
+## [2.1.0] - 2024-11-08
+### Added
+- Console clock display.
+
+### Fixed
+- Make ui DPI awareness
+  
+
+## [2.0.0] - 2024-11-02
 ### Added
 - Windows Terminal support.
 
