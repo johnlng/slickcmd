@@ -14,6 +14,7 @@ pub const IDC_MAX_RECENT_DIRS_SPIN: u16 = 1003;
 pub const IDC_CHK_CD_COMPLETION: u16 = 1005;
 pub const IDC_CHK_RUN_ON_STARTUP: u16 = 1006;
 pub const IDC_SYSLINK_SITE: u16 = 1007;
+pub const IDC_CHK_SHOW_CLOCK: u16 = 1008;
 
 //
 pub const WM_USER: u32 = 0x0400;
@@ -51,6 +52,9 @@ pub const WM_UIA_FOCUS_CHANGE: u32 = WM_USER + 4009;
 pub const WM_WT_CONSOLE_ACTIVATE: u32 = WM_USER + 4010;
 pub const WM_CLEAN_CONSOLES: u32 = WM_USER + 4011;
 
+pub const WM_SYSTEM_MOVESIZESTART: u32 = WM_USER + 4012;
+pub const WM_SYSTEM_MOVESIZEEND: u32 = WM_USER + 4013;
+pub const WM_WT_FOCUS_CHANGE: u32 = WM_USER + 4014;
 
 //
 pub const APP_TITLE: &str = "Slick Cmd";

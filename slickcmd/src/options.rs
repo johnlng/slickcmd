@@ -8,7 +8,7 @@ pub struct Options {
     max_recent_dirs: Cell<u32>,
     cd_completion: Cell<bool>,
     run_on_startup: Cell<bool>,
-
+    show_clock: Cell<bool>,
 }
 
 impl Options {
@@ -23,6 +23,7 @@ impl Options {
         ini.write("General", "max_recent_dirs", self.max_recent_dirs());
         ini.write("General", "cd_completion", self.cd_completion());
         ini.write("General", "run_on_startup", self.run_on_startup());
+        ini.write("General", "show_clock", self.show_clock());
     }
 
     pub fn init(&self) {
@@ -30,6 +31,7 @@ impl Options {
         self.set_max_recent_dirs(ini.read_or("General", "max_recent_dirs", 15));
         self.set_cd_completion(ini.read_or("General", "cd_completion", true));
         self.set_run_on_startup(ini.read_or("General", "run_on_startup", true));
+        self.set_show_clock(ini.read_or("General", "show_clock", false));
     }
 
     pub fn max_recent_dirs(&self) -> u32 {
@@ -56,4 +58,11 @@ impl Options {
         self.run_on_startup.set(value);
     }
 
+    pub fn show_clock(&self) -> bool {
+        self.show_clock.get()
+    }
+
+    pub fn set_show_clock(&self, value: bool) {
+        self.show_clock.set(value);
+    }
 }

@@ -1,8 +1,5 @@
 use crate::startup_link::StartupLink;
-use slickcmd_common::consts::{
-    IDC_CHK_CD_COMPLETION, IDC_CHK_RUN_ON_STARTUP, IDC_MAX_RECENT_DIRS, IDC_MAX_RECENT_DIRS_SPIN,
-    IDD_OPTIONS,
-};
+use slickcmd_common::consts::{IDC_CHK_CD_COMPLETION, IDC_CHK_RUN_ON_STARTUP, IDC_CHK_SHOW_CLOCK, IDC_MAX_RECENT_DIRS, IDC_MAX_RECENT_DIRS_SPIN, IDD_OPTIONS};
 use slickcmd_common::dlg::{dlg_proc, Dlg};
 use slickcmd_common::{dlg, utils, win32};
 use windows::Win32::Foundation::*;
@@ -17,6 +14,7 @@ pub struct OptionsDlg {
     hwnd_max_recent_dirs: HWND,
     hwnd_chk_cd_completion: HWND,
     hwnd_chk_run_on_startup: HWND,
+    hwnd_chk_show_clock: HWND,
 }
 
 impl OptionsDlg {
@@ -48,6 +46,7 @@ impl OptionsDlg {
 
         self.hwnd_chk_cd_completion = win32::get_dlg_item(self.hwnd, IDC_CHK_CD_COMPLETION);
         self.hwnd_chk_run_on_startup = win32::get_dlg_item(self.hwnd, IDC_CHK_RUN_ON_STARTUP);
+        self.hwnd_chk_show_clock = win32::get_dlg_item(self.hwnd, IDC_CHK_SHOW_CLOCK);
 
         let options = &GLOBAL.options;
         let text = &format!("{}", options.max_recent_dirs());
@@ -55,6 +54,7 @@ impl OptionsDlg {
 
         self.set_check(self.hwnd_chk_cd_completion, options.cd_completion());
         self.set_check(self.hwnd_chk_run_on_startup, options.run_on_startup());
+        self.set_check(self.hwnd_chk_show_clock, options.show_clock());
 
         1
     }
@@ -78,11 +78,13 @@ impl OptionsDlg {
 
         let enable_cd_completion = self.get_check(self.hwnd_chk_cd_completion);
         let run_on_startup = self.get_check(self.hwnd_chk_run_on_startup);
+        let show_clock = self.get_check(self.hwnd_chk_show_clock);
 
         let options = &GLOBAL.options;
         options.set_max_recent_dirs(max_recent_dirs);
         options.set_cd_completion(enable_cd_completion);
         options.set_run_on_startup(run_on_startup);
+        options.set_show_clock(show_clock);
         options.save();
 
         //

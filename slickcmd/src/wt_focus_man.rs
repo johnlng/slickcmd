@@ -1,5 +1,5 @@
 use crate::global::GLOBAL;
-use slickcmd_common::consts::{WM_UIA_FOCUS_CHANGE, WM_WT_CONSOLE_ACTIVATE};
+use slickcmd_common::consts::{WM_SYSTEM_MOVESIZEEND, WM_SYSTEM_MOVESIZESTART, WM_UIA_FOCUS_CHANGE, WM_WT_CONSOLE_ACTIVATE, WM_WT_FOCUS_CHANGE};
 use slickcmd_common::{logd, win32};
 use std::collections::{HashMap, HashSet};
 use std::ffi::c_void;
@@ -35,11 +35,14 @@ static HWND_WT: AtomicUsize = AtomicUsize::new(0);
 static HWND_CUR_CONSOLE: AtomicUsize = AtomicUsize::new(0);
 static THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
+static WT_LISTENER_HWNDS: Mutex<Vec::<usize>> = Mutex::new(Vec::new());
+
 pub struct WtFocusMan<'a> {
     uia: &'a IUIAutomation,
     hwnd_wt: usize,
     focused_console_index: isize,
     console_infos: Vec<WtConsoleInfo>,
+    h_event_hook: HWINEVENTHOOK,
 }
 
 impl<'a> WtFocusMan<'a> {
@@ -66,6 +69,17 @@ impl<'a> WtFocusMan<'a> {
         *CUR_CONSOLE_BOUNDS.lock().unwrap()
     }
 
+    pub fn add_wt_listener_hwnd(hwnd: HWND) {
+        WT_LISTENER_HWNDS.lock().unwrap().push(hwnd.0 as _);
+    }
+
+    pub fn remove_wt_listener_hwnd(hwnd: HWND) {
+        let mut hwnds = WT_LISTENER_HWNDS.lock().unwrap();
+        if let Some(index) = hwnds.iter().position(|&x| x == hwnd.0 as usize) {
+            hwnds.remove(index);
+        }
+    }
+
     pub fn new(uia: &'a IUIAutomation, hwnd_wt: usize) -> WtFocusMan {
         let mut console_infos_map = CONSOLE_INFOS_MAP.lock().unwrap();
         let console_infos = console_infos_map.remove(&hwnd_wt).unwrap_or_default();
@@ -75,10 +89,22 @@ impl<'a> WtFocusMan<'a> {
             hwnd_wt,
             focused_console_index: -1,
             console_infos,
+            h_event_hook: HWINEVENTHOOK::default(),
         }
     }
 
     pub fn init(&mut self) {
+        let (pid, tid) = win32::get_window_thread_process_id(HWND(self.hwnd_wt as _));
+        self.h_event_hook = win32::set_win_event_hook(
+            EVENT_SYSTEM_MOVESIZESTART,
+            EVENT_SYSTEM_MOVESIZEEND,
+            HMODULE::default(),
+            Some(winevent_proc),
+            pid,
+            tid,
+            WINEVENT_OUTOFCONTEXT,
+        );
+
         self.check_focus();
     }
 
@@ -104,6 +130,9 @@ impl<'a> WtFocusMan<'a> {
                 } else {
                     let info = &self.console_infos[self.focused_console_index as usize];
                     self.notify_console_activate(info.hwnd);
+                }
+                for &hwnd in WT_LISTENER_HWNDS.lock().unwrap().iter() {
+                    win32::post_message(HWND(hwnd as _), WM_WT_FOCUS_CHANGE, WPARAM(0), LPARAM(0));
                 }
             }
         }
@@ -277,6 +306,8 @@ impl<'a> WtFocusMan<'a> {
     }
 
     fn dispose(&mut self) {
+        win32::unhook_win_event(self.h_event_hook);
+
         let mut console_infos = mem::replace(&mut self.console_infos, Vec::new());
         let mut invalid_console_indexes: Vec<usize> = Vec::new();
         for n in (0..console_infos.len()).rev() {
@@ -387,10 +418,37 @@ extern "system" fn wt_thread_proc(lp_param: *mut c_void) -> u32 {
             wt_focus_man.check_focus();
         } else if msg.message == WM_UIA_FOCUS_CHANGE {
             wt_focus_man.check_focus();
+        } else if msg.message == WM_SYSTEM_MOVESIZESTART {
+            for &hwnd in WT_LISTENER_HWNDS.lock().unwrap().iter() {
+                win32::post_message(HWND(hwnd as _), WM_SYSTEM_MOVESIZESTART, WPARAM(0), LPARAM(0));
+            }
+        } else if msg.message == WM_SYSTEM_MOVESIZEEND {
+            wt_focus_man.check_focus();
+            for &hwnd in WT_LISTENER_HWNDS.lock().unwrap().iter() {
+                win32::post_message(HWND(hwnd as _), WM_SYSTEM_MOVESIZEEND, WPARAM(0), LPARAM(0));
+            }
         }
     }
     wt_focus_man.dispose();
     _ = unsafe { uia.RemoveFocusChangedEventHandler(&handler) };
     win32::co_uninitialize();
     0u32
+}
+
+unsafe extern "system" fn winevent_proc(
+    _hwineventhook: HWINEVENTHOOK,
+    event: u32,
+    _hwnd: HWND,
+    _idobject: i32,
+    _idchild: i32,
+    _ideventthread: u32,
+    _dwmseventtime: u32,
+) {
+    let tid_wt = THREAD_ID.load(Relaxed);
+    if event == EVENT_SYSTEM_MOVESIZESTART {
+        win32::post_thread_message(tid_wt, WM_SYSTEM_MOVESIZESTART, WPARAM(0), LPARAM(0));
+    } else if event == EVENT_SYSTEM_MOVESIZEEND {
+        win32::post_thread_message(tid_wt, WM_SYSTEM_MOVESIZEEND, WPARAM(0), LPARAM(0));
+
+    }
 }

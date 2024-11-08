@@ -19,6 +19,7 @@ use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use crate::app::App;
+use crate::clock_win::ClockWin;
 use crate::win_man::WinMan;
 
 #[derive(Default)]
@@ -48,6 +49,7 @@ pub struct Console {
     update_cur_dir_on_key_up: bool,
     manual_cd_completing: bool,
 
+    clock_win: Option<Box<ClockWin>>,
 }
 
 #[derive(Default)]
@@ -207,12 +209,29 @@ impl Console {
             self.update_cur_dir();
         }
 
+        if GLOBAL.options.show_clock() {
+            let clock_win = ClockWin::new(self.hwnd_term);
+
+            let bounds = self.get_console_bounds();
+            let size = (bounds.right - bounds.left, bounds.bottom - bounds.top);
+            let dim_info = self.read_dimension_info(size);
+
+            let fi = self.get_font_info(&dim_info);
+
+            let mut clock_win = Box::new(clock_win);
+            clock_win.create(fi, (dim_info.cell_width, dim_info.cell_height));
+            self.clock_win = Some(clock_win);
+        }
     }
 
     pub fn on_deactivate(&mut self) {
         logd!("@ CONSOLE DEACTIVATE");
         if self.showing_ac_list {
             self.hide_ac_list();
+        }
+        if let Some(clock_win) = &mut self.clock_win {
+            clock_win.destroy();
+            self.clock_win = None;
         }
         win32::unregister_hotkey(self.hwnd_msg, 1);
         self.command_hist.save();

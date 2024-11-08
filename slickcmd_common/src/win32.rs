@@ -19,6 +19,9 @@ use windows::Win32::System::ProcessStatus::*;
 use windows::Win32::System::SystemInformation::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::System::WindowsProgramming::*;
+use windows::Win32::UI::Accessibility::{
+    SetWinEventHook, UnhookWinEvent, HWINEVENTHOOK, WINEVENTPROC,
+};
 use windows::Win32::UI::Controls::*;
 use windows::Win32::UI::HiDpi::{
     GetDpiForWindow, SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT,
@@ -1237,6 +1240,79 @@ pub fn co_uninitialize() {
 
 pub fn find_close(hfind: HANDLE) {
     unsafe { _ = FindClose(hfind) };
+}
+
+pub fn get_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX) -> i32 {
+    unsafe { GetWindowLongW(hwnd, index) }
+}
+
+pub fn set_window_long(hwnd: HWND, index: WINDOW_LONG_PTR_INDEX, value: i32) {
+    unsafe {
+        SetWindowLongW(hwnd, index, value);
+    }
+}
+
+pub fn create_solid_brush(color: COLORREF) -> HBRUSH {
+    unsafe { CreateSolidBrush(color) }
+}
+
+pub fn rgb(r: u8, g: u8, b: u8) -> COLORREF {
+    let value: u32 = r as u32 | ((g as u16) << 8) as u32 | (b as u32) << 16;
+    COLORREF(value)
+}
+
+pub fn get_window(hwnd: HWND, cmd: GET_WINDOW_CMD) -> HWND {
+    unsafe { GetWindow(hwnd, cmd).unwrap_or_default() }
+}
+
+pub fn set_parent(hwnd_child: HWND, hwnd_new_parent: HWND) {
+    unsafe {
+        _ = SetParent(hwnd_child, hwnd_new_parent);
+    }
+}
+
+pub fn set_win_event_hook(
+    event_min: u32,
+    event_max: u32,
+    hmod: HMODULE,
+    proc: WINEVENTPROC,
+    pid: u32,
+    tid: u32,
+    flags: u32,
+) -> HWINEVENTHOOK {
+    unsafe { SetWinEventHook(event_min, event_max, hmod, proc, pid, tid, flags) }
+}
+
+pub fn unhook_win_event(h_win_event_hook: HWINEVENTHOOK) -> bool {
+    unsafe { UnhookWinEvent(h_win_event_hook).as_bool() }
+}
+
+pub fn ext_text_out(
+    hdc: HDC,
+    x: i32,
+    y: i32,
+    options: ETO_OPTIONS,
+    rect: Option<&RECT>,
+    text: String,
+) -> bool {
+    let wsz_text = wsz_from_str(&text);
+    unsafe {
+        ExtTextOutW(
+            hdc,
+            x,
+            y,
+            options,
+            rect.map(|x| x as _),
+            pwsz(&wsz_text),
+            wsz_text.len() as u32,
+            None,
+        )
+        .as_bool()
+    }
+}
+
+pub fn set_text_align(hdc: HDC, align: TEXT_ALIGN_OPTIONS) -> TEXT_ALIGN_OPTIONS {
+    unsafe { TEXT_ALIGN_OPTIONS(SetTextAlign(hdc, align)) }
 }
 
 pub fn set_process_dpi_awareness_context(context: DPI_AWARENESS_CONTEXT) -> bool {
