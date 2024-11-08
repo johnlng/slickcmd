@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "slickcmd"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "anyhow",
  "faster-hex",
@@ -187,7 +187,7 @@ dependencies = [
 
 [[package]]
 name = "slickcmd_common"
-version = "0.1.0"
+version = "2.1.0"
 dependencies = [
  "widestring",
  "windows",
@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "slickcmd_core"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "slickcmd_common",
  "widestring",
@@ -213,7 +213,7 @@ dependencies = [
 
 [[package]]
 name = "slickcmd_shl"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "slickcmd_common",
  "widestring",
