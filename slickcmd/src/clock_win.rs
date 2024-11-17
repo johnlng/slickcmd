@@ -199,6 +199,9 @@ impl WinProc for ClockWin {
                 self.on_paint();
                 return LRESULT(0);
             }
+            WM_NCHITTEST => {
+                return LRESULT(HTNOWHERE as _);
+            }
             WM_SYSTEM_MOVESIZESTART => {
                 win32::show_window(self.hwnd, SW_HIDE);
             }

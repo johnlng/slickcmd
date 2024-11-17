@@ -190,12 +190,22 @@ impl<'a> WtFocusMan<'a> {
         let rt_id = rt_id_to_string(psa_rt_id);
         win32::safe_array_destroy(psa_rt_id);
 
+        let mut invalid_console_hwnd_index: Option<usize> = None;
         for (index, console) in self.console_infos.iter().enumerate() {
             if console.rt_id == rt_id {
-                self.save_cur_console_bounds(el);
-                HWND_CUR_CONSOLE.store(console.hwnd, Ordering::Relaxed);
-                return index as _;
+                if win32::is_window(HWND(console.hwnd as _)) {
+                    self.save_cur_console_bounds(el);
+                    HWND_CUR_CONSOLE.store(console.hwnd, Relaxed);
+                    return index as _;
+                }
+                else {
+                    invalid_console_hwnd_index = Some(index);
+                    break;
+                }
             }
+        }
+        if let Some(index) = invalid_console_hwnd_index {
+            self.console_infos.remove(index);
         }
         let hwnd = self.resolve_console_hwnd(el);
         if hwnd == 0 {

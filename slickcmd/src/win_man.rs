@@ -84,7 +84,11 @@ impl WinMan {
                 self.set_last_active_hwnd(hwnd);
                 return true;
             }
-            self.console_man.borrow_mut().on_activate(0);
+            let borrow = self.console_man.try_borrow_mut();
+            if borrow.is_err() { //?
+                return false;
+            }
+            borrow.unwrap().on_activate(0);
             self.set_last_active_hwnd(0);
             return false;
         }

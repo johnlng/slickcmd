@@ -62,6 +62,12 @@ impl ConsoleMan {
     }
 
     pub fn on_activate(&mut self, hwnd: usize) {
+        let hwnd = if win32::is_window(HWND(hwnd as _)) {
+            hwnd
+        } else {
+            0
+        };
+
         win32::post_message(GLOBAL.hwnd_msg(), WM_CLEAN_CONSOLES, WPARAM(0), LPARAM(0));
         if let Some(console) = &self.cur_console {
             let cur_hwnd = console.borrow().hwnd.0 as usize;
@@ -90,10 +96,19 @@ impl ConsoleMan {
     }
 
     pub fn cur_console(&mut self) -> Option<Rc<RefCell<Console>>> {
+        let mut invalid = false;
         if let Some(console) = &self.cur_console {
-            if !console.borrow().check_valid() {
-                self.cur_console = None;
+            match console.try_borrow() {
+                Err(_) => return None,
+                Ok(console) => {
+                    if !console.check_valid() {
+                        invalid = true;
+                    }
+                }
             }
+        }
+        if invalid {
+            self.cur_console = None;
         }
         self.cur_console.clone()
     }
