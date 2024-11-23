@@ -78,7 +78,7 @@ CAPTION "About Slick Cmd"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDI_slickcmd,IDC_STATIC,14,14,20,20
-    LTEXT           "Slick Cmd, Version 2.1.0",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Slick Cmd, Version 2.2.0",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright © 2024 John Long",IDC_STATIC,42,26,114,8
     DEFPUSHBUTTON   "OK",IDOK,114,65,50,14,WS_GROUP
     CONTROL         "<a>https://github.com/johnlng/slickcmd</a>",IDC_SYSLINK1,
@@ -168,8 +168,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,1,0,0
- PRODUCTVERSION 2,1,0,0
+ FILEVERSION 2,2,0,0
+ PRODUCTVERSION 2,2,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -186,12 +186,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "TODO: <Company name>"
             VALUE "FileDescription", "Slick Cmd"
-            VALUE "FileVersion", "2.1.0.0"
+            VALUE "FileVersion", "2.2.0.0"
             VALUE "InternalName", "slickcmd.exe"
             VALUE "LegalCopyright", "Copyright © 2024 Zane Long"
             VALUE "OriginalFilename", "slickcmd.exe"
             VALUE "ProductName", "Slick Cmd"
-            VALUE "ProductVersion", "2.1.0.0"
+            VALUE "ProductVersion", "2.2.0.0"
         END
     END
     BLOCK "VarFileInfo"
