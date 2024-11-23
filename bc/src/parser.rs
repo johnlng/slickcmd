@@ -499,15 +499,7 @@ fn improve_pest_error(err: PestError, text: &str, file_path: Option<&str>) -> Pe
 #[derive(Debug)]
 pub struct ParseError {
     errors: Vec<PestError>,
-    /// is `true` if the parsed program contains an incomplete expression,
-    /// statement, comment or string.
-    /// # Examples
-    /// ```
-    /// assert!(parse_program("1 + 2 *\\\n", None).unwrap_err().is_incomplete)
-    /// assert!(parse_program("define f() {\n", None).unwrap_err().is_incomplete)
-    /// assert!(parse_program("if (c) {\n", None).unwrap_err().is_incomplete)
-    /// assert!(parse_program("while (c) {\n", None).unwrap_err().is_incomplete)
-    /// ```
+
     pub is_incomplete: bool,
 }
 
