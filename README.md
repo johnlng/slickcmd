@@ -10,20 +10,23 @@
 
 ## Screenshots
 
-<figure>
-  <img src="docs/images/screen-cd.png" alt="cd completion">
-  <figcaption>cd completion</figcaption>
-</figure>
+![cd completion](docs/images/screen-cd.png)
 
-<figure>
-  <img src="docs/images/screen-clock.png" alt="console clock">
-  <figcaption>console clock</figcaption>
-</figure>
+*cd completion*
 
-<figure>
-  <img src="docs/images/screen-calc.png" alt="direct calculation">
-  <figcaption>direct calculation</figcaption>
-</figure>
+------
+
+![console clock](docs/images/screen-clock.png)
+
+*console clock*
+
+------
+
+![direct calculation](docs/images/screen-calc.png)
+
+*direct calculation*
+
+------
 
 
 ## ✨ Features
