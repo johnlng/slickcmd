@@ -58,11 +58,13 @@
     - `Ctrl + L` — Clear the screen with a single keystroke, running the `cls` command automatically.
 
 - **Console clock**
-    Remember the good old DOS TSR clock? This feature brings it back to life in today's console window.
+    - Remember the good old DOS TSR clock? This feature brings it back to life in today's console window.
+    - >This is an optional feature. To enable it, check the options dialog.
 
 - **Command line calculator**
-    Perform calculations directly in the classic command prompt, just like in PowerShell.
-
+    - Perform calculations directly in the classic command prompt, just like in PowerShell.
+    - >This is an optional feature. To enable it, check the options dialog.
+  
 ## ⚙️ Requirements
 
 * **Operating System:** Windows 10 or above, 64-bit
