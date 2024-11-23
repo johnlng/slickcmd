@@ -118,6 +118,12 @@ impl WinProc for MsgWin {
         }
 
         match msg {
+            WM_NOTIFY_KEY_SUPPRESS_END => {
+                if let Some(cur_console) = &self.cur_console() {
+                    cur_console.borrow_mut().on_key_suppress_end();
+                }
+            }
+
             WM_WT_CONSOLE_ACTIVATE => {
                 self.process_wt_term_activate(wparam, lparam);
                 return LRESULT(0);
@@ -209,7 +215,6 @@ impl WinProc for MsgWin {
             }
 
             WM_HIST_WIN_DESTROYED => {
-                // let console =  self.console_map.get();
                 if let Some(console) = self.console_man.borrow().get_console(wparam.0) {
                     console.borrow_mut().notify_hist_win_destroyed();
                 }

@@ -1,0 +1,10 @@
+[package]
+name = "bc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bigdecimal = "0.4"
+regex = "1.11.1"
+pest = "2.7.14"
+pest_derive = "2.7.14"

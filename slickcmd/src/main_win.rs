@@ -1,3 +1,4 @@
+use crate::global::GLOBAL;
 use crate::options_dlg::OptionsDlg;
 use slickcmd_common::winproc::{wndproc, WinProc};
 use slickcmd_common::{consts::*, win32};
@@ -9,7 +10,6 @@ use windows::{
     core::PCWSTR,
     Win32::{Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*},
 };
-use crate::global::GLOBAL;
 
 #[derive(Default)]
 pub struct MainWin {
@@ -76,14 +76,19 @@ impl MainWin {
         hwnd
     }
 
+    fn launch_cmd(&self) {
+        win32::shell_execute(self.hwnd, "open", "cmd.exe", None, None, SW_SHOWNORMAL);
+    }
+
     fn process_tray_callback(&mut self, wparam: WPARAM, lparam: LPARAM) {
         let nin_msg = lparam.0 as u32;
 
         match nin_msg {
-            NIN_KEYSELECT | NIN_SELECT | WM_LBUTTONUP => {
+            NIN_SELECT => {
                 // win32::show_window(self.hwnd, SW_SHOW);
+                self.launch_cmd();
             }
-            WM_RBUTTONUP => {
+            WM_CONTEXTMENU => {
                 let x = wparam.0 as u16 as i16 as i32;
                 let y = (wparam.0 >> 16) as u16 as i16 as i32;
                 self.show_tray_menu(x, y);

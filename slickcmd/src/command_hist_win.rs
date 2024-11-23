@@ -14,7 +14,6 @@ use crate::global::GLOBAL;
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::winproc::{wndproc, WinProc};
 
-// #[derive(Default)]
 pub struct CommandHistWin {
     pub hwnd: HWND,
 
@@ -181,7 +180,6 @@ impl WinProc for CommandHistWin {
                 self.hists.clear();
 
                 let hwnd_msg = GLOBAL.hwnd_msg();
-                // let hwnd_console = win32::get_parent(self.hwnd);
                 let hwnd_console = self.hwnd_console;
                 if win32::is_window(hwnd_console) {
                     let wparam = WPARAM(hwnd_console.0 as _);

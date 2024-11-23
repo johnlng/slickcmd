@@ -62,4 +62,13 @@ impl AppComm {
             LPARAM(wsz.as_ptr() as isize),
         );
     }
+
+    pub fn notify_key_suppress_end(&self) {
+        win32::post_message(
+            self.hwnd(),
+            consts::WM_NOTIFY_KEY_SUPPRESS_END,
+            WPARAM(0),
+            LPARAM(0),
+        );
+    }
 }

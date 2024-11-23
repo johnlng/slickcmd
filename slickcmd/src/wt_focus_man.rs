@@ -1,5 +1,9 @@
+use crate::app::App;
 use crate::global::GLOBAL;
-use slickcmd_common::consts::{WM_SYSTEM_MOVESIZEEND, WM_SYSTEM_MOVESIZESTART, WM_UIA_FOCUS_CHANGE, WM_WT_CONSOLE_ACTIVATE, WM_WT_FOCUS_CHANGE};
+use slickcmd_common::consts::{
+    WM_SYSTEM_MOVESIZEEND, WM_SYSTEM_MOVESIZESTART, WM_UIA_FOCUS_CHANGE, WM_WT_CONSOLE_ACTIVATE,
+    WM_WT_FOCUS_CHANGE,
+};
 use slickcmd_common::{logd, win32};
 use std::collections::{HashMap, HashSet};
 use std::ffi::c_void;
@@ -13,7 +17,6 @@ use windows::Win32::System::Com::*;
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows_core::implement;
-use crate::app::App;
 
 #[derive(Clone)]
 struct WtConsoleInfo {
@@ -35,7 +38,7 @@ static HWND_WT: AtomicUsize = AtomicUsize::new(0);
 static HWND_CUR_CONSOLE: AtomicUsize = AtomicUsize::new(0);
 static THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
-static WT_LISTENER_HWNDS: Mutex<Vec::<usize>> = Mutex::new(Vec::new());
+static WT_LISTENER_HWNDS: Mutex<Vec<usize>> = Mutex::new(Vec::new());
 
 pub struct WtFocusMan<'a> {
     uia: &'a IUIAutomation,
@@ -197,8 +200,7 @@ impl<'a> WtFocusMan<'a> {
                     self.save_cur_console_bounds(el);
                     HWND_CUR_CONSOLE.store(console.hwnd, Relaxed);
                     return index as _;
-                }
-                else {
+                } else {
                     invalid_console_hwnd_index = Some(index);
                     break;
                 }
@@ -430,7 +432,12 @@ extern "system" fn wt_thread_proc(lp_param: *mut c_void) -> u32 {
             wt_focus_man.check_focus();
         } else if msg.message == WM_SYSTEM_MOVESIZESTART {
             for &hwnd in WT_LISTENER_HWNDS.lock().unwrap().iter() {
-                win32::post_message(HWND(hwnd as _), WM_SYSTEM_MOVESIZESTART, WPARAM(0), LPARAM(0));
+                win32::post_message(
+                    HWND(hwnd as _),
+                    WM_SYSTEM_MOVESIZESTART,
+                    WPARAM(0),
+                    LPARAM(0),
+                );
             }
         } else if msg.message == WM_SYSTEM_MOVESIZEEND {
             wt_focus_man.check_focus();
@@ -459,6 +466,5 @@ unsafe extern "system" fn winevent_proc(
         win32::post_thread_message(tid_wt, WM_SYSTEM_MOVESIZESTART, WPARAM(0), LPARAM(0));
     } else if event == EVENT_SYSTEM_MOVESIZEEND {
         win32::post_thread_message(tid_wt, WM_SYSTEM_MOVESIZEEND, WPARAM(0), LPARAM(0));
-
     }
 }

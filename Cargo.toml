@@ -3,6 +3,6 @@
 resolver = "2"
 
 members = [
-	"slickcmd", "slickcmd_common", "slickcmd_core", "slickcmd_logger", "slickcmd_shl",
+	"slickcmd", "slickcmd_common", "slickcmd_core", "slickcmd_logger", "slickcmd_shl", "bc",
 ]
 

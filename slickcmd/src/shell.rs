@@ -2,11 +2,11 @@ use crate::console::Console;
 use slickcmd_common::{utils, win32};
 use windows::Win32::Foundation::*;
 use windows::Win32::System::Console::*;
-use windows::Win32::UI::Input::KeyboardAndMouse::VK_ESCAPE;
+use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use crate::keyboard_input::KeyboardInput;
 
 pub trait Shell {
-    fn name(&self) -> String;
+    fn typ(&self) -> String;
     fn at_prompt(&self, console: &Console) -> bool;
 
     fn resolve_cur_dir(&self, console: &Console) -> String;
@@ -30,12 +30,12 @@ impl Default for Box<dyn Shell> {
 pub struct CmdShell();
 
 impl Shell for CmdShell {
-    fn name(&self) -> String {
+    fn typ(&self) -> String {
         "cmd".into()
     }
 
     fn at_prompt(&self, console: &Console) -> bool {
-        let _ca = console.new_console_attach(true);
+        let _ca = console.new_console_attach();
         console.is_line_editing() && !console.is_running_subprocess()
     }
 
@@ -66,7 +66,7 @@ impl Shell for CmdShell {
 
     fn set_input(&self, console: &Console, input_text: &str) {
 
-        let ca = console.new_console_attach(true);
+        let ca = console.new_console_attach();
 
         let wc_input_text: Vec<u16> = input_text.encode_utf16().collect();
         let cch = wc_input_text.len();
@@ -105,12 +105,13 @@ impl Shell for CmdShell {
         let mut written_count = 0u32;
         win32::write_console_input(ca.h_stdin, &inputs, &mut written_count);
     }
+
 }
 
 pub struct PsShell();
 
 impl Shell for PsShell {
-    fn name(&self) -> String {
+    fn typ(&self) -> String {
         "ps".into()
     }
 
@@ -169,4 +170,5 @@ impl Shell for PsShell {
         ki.send(true);
 
     }
+
 }

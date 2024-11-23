@@ -17,7 +17,6 @@ use windows::Win32::Foundation::*;
 use windows::Win32::UI::HiDpi::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-// #[derive(Default)]
 pub struct App {
     main_win: MainWin,
 
@@ -29,9 +28,6 @@ pub struct App {
 
     state: Rc<AppState>,
 
-    // win_man: Rc<RefCell<WinMan>>,
-
-    // console_man: Rc<RefCell<ConsoleMan>>,
 }
 
 unsafe impl Sync for App {}
@@ -55,8 +51,6 @@ impl App {
             tray_icon: TrayIcon::default(),
             hhook_shell: HHOOK::default(),
             state,
-            // win_man,
-            // console_man
         }
     }
 
@@ -78,7 +72,6 @@ impl App {
         GLOBAL.set_dpi(win32::get_dpi_for_window(hwnd_main));
 
         self.state.recent_dirs.load();
-        // self.msg_win.recent_dirs = self.recent_dirs.clone();
 
         let hwnd_msg = self.msg_win.create();
         GLOBAL.set_hwnd_msg(hwnd_msg);

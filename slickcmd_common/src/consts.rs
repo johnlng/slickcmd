@@ -15,6 +15,7 @@ pub const IDC_CHK_CD_COMPLETION: u16 = 1005;
 pub const IDC_CHK_RUN_ON_STARTUP: u16 = 1006;
 pub const IDC_SYSLINK_SITE: u16 = 1007;
 pub const IDC_CHK_SHOW_CLOCK: u16 = 1008;
+pub const IDC_CHK_CALCULATOR: u16 = 1009;
 
 //
 pub const WM_USER: u32 = 0x0400;
@@ -30,6 +31,8 @@ pub const WM_NOTIFY_AC_LIST_CLOSED: u32 = WM_USER + 1004;
 
 // pub const WM_POST_SHOW_MENU: u32 = WM_USER + 1005;
 pub const WM_SHOW_MENU: u32 = WM_USER + 1005;
+pub const WM_NOTIFY_KEY_SUPPRESS_END: u32 = WM_USER + 1006;
+// pub const WM_SET_ENV_VAR: u32 = WM_USER + 1007;
 
 //slickcmd
 pub const WM_POST_CONSOLE_ACTIVATE: u32 = WM_USER + 4001;
@@ -37,9 +40,7 @@ pub const WM_TRAY_CALLBACK: u32 = WM_USER + 4002;
 
 pub const WM_POST_ACTION: u32 = WM_USER + 4003;
 pub const POST_ACTION_ALT_DOWN: usize = 1;
-// pub const POST_ACTION_ENTER: WPARAM = WPARAM(1);
-// pub const POST_ACTION_UPDATE_CUR_DIR: WPARAM = WPARAM(2);
-// pub const POST_REPLACE_COMMAND: WPARAM = WPARAM(3);
+pub const POST_ACTION_CUSTOM_OUTPUT: usize = 2;
 
 pub const WM_SHOW_AUTO_COMPLETE: u32 = WM_USER + 4004;
 pub const WM_HIDE_AUTO_COMPLETE: u32 = WM_USER + 4005;
@@ -55,6 +56,8 @@ pub const WM_CLEAN_CONSOLES: u32 = WM_USER + 4011;
 pub const WM_SYSTEM_MOVESIZESTART: u32 = WM_USER + 4012;
 pub const WM_SYSTEM_MOVESIZEEND: u32 = WM_USER + 4013;
 pub const WM_WT_FOCUS_CHANGE: u32 = WM_USER + 4014;
+
+pub const WM_POST_CREATE: u32 = WM_USER + 4015;
 
 //
 pub const APP_TITLE: &str = "Slick Cmd";

@@ -24,6 +24,7 @@
 #define IDC_CHK_RUN_ON_STARTUP          1006
 #define IDC_SYSLINK1                    1007
 #define IDC_CHK_SHOW_CLOCK              1008
+#define IDC_CHK_CALCULATOR              1009
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

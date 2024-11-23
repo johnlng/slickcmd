@@ -1,7 +1,9 @@
 use crate::global::GLOBAL;
 use crate::win_man::WinMan;
 use crate::wt_focus_man::WtFocusMan;
-use slickcmd_common::consts::{WM_SYSTEM_MOVESIZEEND, WM_SYSTEM_MOVESIZESTART, WM_WT_FOCUS_CHANGE};
+use slickcmd_common::consts::{
+    WM_POST_CREATE, WM_SYSTEM_MOVESIZEEND, WM_SYSTEM_MOVESIZESTART, WM_WT_FOCUS_CHANGE,
+};
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::winproc::{wndproc, WinProc};
 use slickcmd_common::{logd, win32};
@@ -111,8 +113,7 @@ impl ClockWin {
             }
         }
 
-        self.on_timer();
-        win32::set_timer(self.hwnd, 1, 1000, None);
+        win32::post_message(self.hwnd, WM_POST_CREATE, WPARAM(0), LPARAM(0));
     }
 
     pub fn destroy(&mut self) {
@@ -191,6 +192,10 @@ impl ClockWin {
 impl WinProc for ClockWin {
     fn wndproc(&mut self, window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         match message {
+            WM_POST_CREATE => {
+                self.on_timer();
+                win32::set_timer(self.hwnd, 1, 1000, None);
+            }
             WM_TIMER => {
                 self.on_timer();
                 return LRESULT(0);

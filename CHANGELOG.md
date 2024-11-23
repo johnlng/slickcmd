@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.0] - 2024-11-23
+### Added
+- Enable direct calculation on the command line.
+
 ## [2.1.0] - 2024-11-08
 ### Added
 - Console clock display.

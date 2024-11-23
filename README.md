@@ -36,6 +36,12 @@
 - **Quick Screen Clearing:**
     - `Ctrl + L` — Clear the screen with a single keystroke, running the `cls` command automatically.
 
+- **Console clock**
+    Remember the good old DOS TSR clock? This feature brings it back to life in today's console window.
+
+- **Command line calculator**
+    Perform calculations directly in the classic command prompt, just like in PowerShell.
+
 ## ⚙️ Requirements
 
 * **Operating System:** Windows 10 or above, 64-bit
@@ -104,3 +110,4 @@ If you like the project, please consider giving it a ⭐ and sharing it with oth
 ## Acknowledgments
 
 * The keyboard button image used in this project is sourced from [AutoHotKey](https://github.com/AutoHotkey/AutoHotkey)
+* The calculator implementation is adapted from [posixutils-rs](https://github.com/rustcoreutils/posixutils-rs) 

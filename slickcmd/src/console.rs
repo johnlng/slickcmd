@@ -1,4 +1,6 @@
+use crate::app::App;
 use crate::app_state::AppState;
+use crate::clock_win::ClockWin;
 use crate::command_hist::CommandHist;
 use crate::command_hist_win::CommandHistWin;
 use crate::dir_complete::DIR_COMPLETER;
@@ -6,21 +8,20 @@ use crate::dir_man::CurDir;
 use crate::global::GLOBAL;
 use crate::keyboard_input::KeyboardInput;
 use crate::shell::{CmdShell, PsShell, Shell};
+use crate::win_man::WinMan;
 use slickcmd_common::consts::*;
 use slickcmd_common::font_info::FontInfo;
 use slickcmd_common::utils::iif;
 use slickcmd_common::{logd, utils, win32};
 use std::path::Path;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, mem, rc::Rc};
 use widestring::U16CString;
 use windows::Win32::Foundation::*;
 use windows::Win32::System::Console::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
-use crate::app::App;
-use crate::clock_win::ClockWin;
-use crate::win_man::WinMan;
+use crate::calculator;
 
 #[derive(Default)]
 pub struct Console {
@@ -37,6 +38,7 @@ pub struct Console {
     cur_dir: CurDir,
 
     replacing_command: String,
+    custom_command_output: String,
 
     context: Rc<RefCell<ConsoleContext>>,
 
@@ -78,10 +80,11 @@ pub struct ConsoleAttach {
 }
 
 impl ConsoleAttach {
-    fn new(pid: u32, context: Rc<RefCell<ConsoleContext>>, with_stdin: bool) -> ConsoleAttach {
+    fn new(pid: u32, context: Rc<RefCell<ConsoleContext>>) -> ConsoleAttach {
         let context0 = context.clone();
         let mut ctx = context.borrow_mut();
         let mut h_stdout: HANDLE = HANDLE::default();
+        let h_stdin: HANDLE;
         if ctx.attach_count == 0 {
             for _ in 0..50 {
                 let attached = win32::attach_console(pid);
@@ -97,27 +100,28 @@ impl ConsoleAttach {
                     break;
                 }
             }
-            debug_assert!(!h_stdout.is_invalid());
+            debug_assert!(!h_stdout.is_invalid()); //?
             ctx.h_stdout = h_stdout;
-        } else {
-            h_stdout = ctx.h_stdout;
-        }
-        if with_stdin {
-            ctx.h_stdin = win32::get_std_handle(STD_INPUT_HANDLE);
-            let (_, ok) = win32::get_console_mode(ctx.h_stdin);
+
+            h_stdin = win32::get_std_handle(STD_INPUT_HANDLE);
+            let (_, ok) = win32::get_console_mode(h_stdin);
             if !ok {
                 logd!("oops??");
-                if ctx.h_stdin.is_invalid() {
+                if h_stdin.is_invalid() {
                     logd!("invalid stdin?");
                 }
             }
+            ctx.h_stdin = h_stdin;
+        } else {
+            h_stdout = ctx.h_stdout;
+            h_stdin = ctx.h_stdin;
         }
 
         ctx.attach_count += 1;
         ConsoleAttach {
             context: context0,
             h_stdout,
-            h_stdin: ctx.h_stdin,
+            h_stdin,
         }
     }
 }
@@ -127,15 +131,13 @@ impl Drop for ConsoleAttach {
         let mut ctx = self.context.borrow_mut();
         ctx.attach_count -= 1;
         if ctx.attach_count == 0 {
-            ctx.h_stdout = HANDLE::default();
-            win32::set_std_handle(STD_OUTPUT_HANDLE, HANDLE::default());
-            if !ctx.h_stdin.is_invalid() {
-                win32::set_std_handle(STD_INPUT_HANDLE, HANDLE::default());
-                ctx.h_stdin = HANDLE::default();
-            }
             if !win32::free_console() {
                 logd!("free console failed?");
             }
+            ctx.h_stdout = HANDLE::default();
+            ctx.h_stdin = HANDLE::default();
+            win32::set_std_handle(STD_OUTPUT_HANDLE, HANDLE::default());
+            win32::set_std_handle(STD_INPUT_HANDLE, HANDLE::default());
         }
     }
 }
@@ -165,7 +167,7 @@ impl Console {
             Box::new(CmdShell {})
         };
 
-        let command_hist = CommandHist::new(&shell.name(), 0);
+        let command_hist = CommandHist::new(&shell.typ(), 0);
 
         let console = Console {
             app_state,
@@ -202,14 +204,13 @@ impl Console {
             self.hwnd_term = hwnd_parent;
         }; //for wt
 
-        let _ca = self.new_console_attach(true);
-        // self.new_console_attach(false); //?
+        let _ca = self.new_console_attach();
 
         if !self.cur_dir.has_set() {
             self.update_cur_dir();
         }
 
-        if GLOBAL.options.show_clock() {
+        if GLOBAL.options.show_clock()  {
             let clock_win = ClockWin::new(self.hwnd_term);
 
             let bounds = self.get_console_bounds();
@@ -238,7 +239,7 @@ impl Console {
     }
 
     pub fn get_fg_pid(&self) -> u32 {
-        let _ca = self.new_console_attach(false);
+        let _ca = self.new_console_attach();
         let mut pids = [0u32; 4];
         let count = win32::get_console_process_list(&mut pids);
         let cur_pid = win32::get_current_process_id();
@@ -265,11 +266,10 @@ impl Console {
     }
 
     fn handle_return_down(&mut self, _alt_down: bool) -> bool {
-        let _ca = self.new_console_attach(false);
+        let _ca = self.new_console_attach();
 
-        let cur_y = self.get_y();
+        let (_, cur_y) = self.get_xy();
         let command_from_y = iif(cur_y > self.last_command_y, self.last_command_y + 1, 0);
-        self.last_command_y = cur_y;
 
         let (_prompt, input) = self.read_prompt_input(command_from_y, false);
         logd!("PROMPT: {}, INPUT: {}", _prompt, input);
@@ -291,7 +291,85 @@ impl Console {
             self.command_hist.add(&input);
         }
 
-        false
+        let mut result = false;
+        if GLOBAL.options.direct_calculator() && self.shell.typ() == "cmd" {
+            if calculator::accepts_input(&input) {
+                let output = calculator::evaluate(&input);
+                self.custom_command_output = output;
+                result = true;
+            }
+        }
+        self.last_command_y = cur_y;
+
+        result
+    }
+
+    pub fn on_key_suppress_end(&mut self) {
+        //
+    }
+
+    fn wait_line_change(&mut self, coord: COORD, line_buf0: &[u16], timeout_mills: i32) -> bool {
+        let tick0 = win32::get_tick_count64();
+        let mut loop_count = 0;
+        let mut line_buf = vec![0u16; line_buf0.len()];
+        let ca = self.new_console_attach();
+        loop {
+            win32::read_console_output_character(ca.h_stdout, &mut line_buf, coord);
+            if line_buf != line_buf0 {
+                return true;
+            }
+            if timeout_mills != 0 && win32::get_tick_count64() - tick0 >= timeout_mills as _ {
+                return false;
+            }
+            loop_count += 1;
+            if loop_count > 1000 || loop_count % 20 == 0 {
+                win32::sleep(1);
+            } else {
+                win32::sleep(0);
+            }
+        }
+    }
+
+    fn custom_output(&mut self) {
+        let mut output = mem::replace(&mut self.custom_command_output, String::new());
+        output = output.replace("\r\n", "\n");
+        if !output.ends_with("\n") {
+            output.push_str("\n");
+        }
+        output = output.replace("\n", "\r\n");
+
+        let ca = self.new_console_attach();
+        let (_, mut input) = self.read_prompt_input(0, false);
+        let (_, y0, w) = self.get_xyw();
+
+        let mut line_buf = vec![0u16; w as usize];
+        let coord = COORD{X:0, Y: y0};
+        win32::read_console_output_character(ca.h_stdout, &mut line_buf, coord);
+
+        let mut ki = KeyboardInput::new();
+        ki.escape();
+        ki.send(true);
+
+        self.wait_line_change(coord, &line_buf, 500);
+
+        //
+        input.push_str("\r\n");
+        win32::write_console(ca.h_stdout, &input);
+
+        let coord = COORD { X: 0, Y: y0 + 1 };
+
+        let line_count = output.chars().filter(|&c| c == '\n').count() as u32 + 1;
+        let char_count = w as u32 * line_count;
+        let mut cch_write = 0u32;
+
+        win32::fill_console_output_character(ca.h_stdout, 32, char_count, coord, &mut cch_write);
+
+        win32::set_console_cursor_position(ca.h_stdout, coord);
+        win32::write_console(ca.h_stdout, &output);
+
+        let mut ki = KeyboardInput::new();
+        ki.enter();
+        ki.send(true);
     }
 
     fn cd_complete(&mut self, input: &str) {
@@ -350,7 +428,11 @@ impl Console {
         if self.manual_cd_completing && !cding {
             self.manual_cd_completing = false;
         }
-        if cding && vk != VK_ESCAPE && (GLOBAL.options.cd_completion() || self.manual_cd_completing)
+        if cding
+            && vk != VK_ESCAPE
+            && (GLOBAL.options.cd_completion() || self.manual_cd_completing)
+            && vk != VK_UP
+            && vk != VK_DOWN
         {
             self.cd_complete(&input);
             return false;
@@ -374,7 +456,7 @@ impl Console {
     }
 
     fn get_font_info(&self, dim_info: &ConsoleDimensionInfo) -> FontInfo {
-        let ca = self.new_console_attach(false);
+        let ca = self.new_console_attach();
         let mut cfi = CONSOLE_FONT_INFOEX::default();
         cfi.cbSize = size_of::<CONSOLE_FONT_INFOEX>() as _;
         if !win32::get_current_console_font_ex(ca.h_stdout, false, &mut cfi) {
@@ -386,12 +468,12 @@ impl Console {
 
         fi.pitch_and_family = cfi.FontFamily as _;
 
-        if cfi.FontWeight == 0 { //wt?
+        if cfi.FontWeight == 0 {
+            //wt?
             fi.name = "Consolas".into();
             fi.width = dim_info.cell_width;
             fi.height = dim_info.cell_height;
-        }
-        else {
+        } else {
             let wsz_face_name = U16CString::from_vec_truncate(cfi.FaceName);
             fi.name = wsz_face_name.to_string_lossy();
         }
@@ -547,6 +629,8 @@ impl Console {
     pub fn handle_post_action(&mut self, action: usize) {
         if action == POST_ACTION_ALT_DOWN {
             self.on_post_alt_down();
+        } else if action == POST_ACTION_CUSTOM_OUTPUT {
+            self.custom_output();
         }
     }
 
@@ -555,11 +639,10 @@ impl Console {
     }
 
     fn on_alt_end(&mut self) {
-
         let bounds = self.get_console_bounds();
 
         let mut pt = {
-            let _ca = self.new_console_attach(false);
+            let _ca = self.new_console_attach();
             let size = (bounds.right - bounds.left, bounds.bottom - bounds.top);
             let dim_info = self.read_dimension_info(size);
             POINT {
@@ -568,7 +651,10 @@ impl Console {
             }
         };
 
-        let mut pt_console = POINT{x: bounds.left, y: bounds.top};
+        let mut pt_console = POINT {
+            x: bounds.left,
+            y: bounds.top,
+        };
         win32::client_to_screen(self.hwnd_term, &mut pt_console);
         pt.x += pt_console.x;
         pt.y += pt_console.y;
@@ -612,22 +698,12 @@ impl Console {
     }
 
     fn post_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) {
-        let hwnd = win32::find_window_ex(
-            HWND_MESSAGE,
-            None,
-            Some("slck_cmd_core_msg"),
-            None,
-        );
+        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_core_msg"), None);
         win32::post_message(hwnd, msg, wparam, lparam);
     }
 
     fn send_core_message(&self, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
-        let hwnd = win32::find_window_ex(
-            HWND_MESSAGE,
-            None,
-            Some("slck_cmd_core_msg"),
-            None,
-        );
+        let hwnd = win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_core_msg"), None);
         win32::send_message(hwnd, msg, wparam, lparam)
     }
 
@@ -651,7 +727,7 @@ impl Console {
             return;
         }
 
-        let category = &self.shell.name();
+        let category = &self.shell.typ();
         let mut hists = CommandHist::load_old_hists(category, self.command_hist.sid());
 
         if !self.command_hist.is_empty() {
@@ -676,6 +752,15 @@ impl Console {
     fn on_alt_f10(&mut self) {}
 
     fn handle_return_up(&mut self, _alt_down: bool) -> bool {
+        if !self.custom_command_output.is_empty() {
+            win32::post_message(
+                self.hwnd_msg,
+                WM_POST_ACTION,
+                WPARAM(POST_ACTION_CUSTOM_OUTPUT),
+                LPARAM(self.hwnd_term.0 as _),
+            );
+            return true;
+        }
         if !self.replacing_command.is_empty() {
             let command = self.replacing_command.clone();
             self.replacing_command.clear();
@@ -749,7 +834,7 @@ impl Console {
     }
 
     pub fn is_line_editing(&self) -> bool {
-        let ca = self.new_console_attach(true);
+        let ca = self.new_console_attach();
         let (mode, ok) = win32::get_console_mode(ca.h_stdin);
         if !ok {
             return false;
@@ -758,7 +843,7 @@ impl Console {
     }
 
     pub fn is_running_subprocess(&self) -> bool {
-        let _ca = self.new_console_attach(false);
+        let _ca = self.new_console_attach();
         let mut pids = [0u32; 4];
         let count = win32::get_console_process_list(&mut pids);
         if count == 0 {
@@ -767,12 +852,12 @@ impl Console {
         count > 2
     }
 
-    pub fn new_console_attach(&self, with_stdin: bool) -> ConsoleAttach {
-        ConsoleAttach::new(self.pid, self.context.clone(), with_stdin)
+    pub fn new_console_attach(&self) -> ConsoleAttach {
+        ConsoleAttach::new(self.pid, self.context.clone())
     }
 
     pub fn read_cur_line(&self, before_cursor: bool) -> String {
-        let ca = self.new_console_attach(false);
+        let ca = self.new_console_attach();
         let mut csbi = CONSOLE_SCREEN_BUFFER_INFO::default();
         if !win32::get_console_screen_buffer_info(ca.h_stdout, &mut csbi) {
             logd!("get console screen buffer info failed.");
@@ -794,7 +879,7 @@ impl Console {
     }
 
     pub fn read_line(&self, y: i16) -> String {
-        let ca = self.new_console_attach(false);
+        let ca = self.new_console_attach();
         let mut csbi = CONSOLE_SCREEN_BUFFER_INFO::default();
         if !win32::get_console_screen_buffer_info(ca.h_stdout, &mut csbi) {
             logd!("get console screen buffer info failed.");
@@ -819,7 +904,7 @@ impl Console {
     pub fn read_prompt_input(&self, from_y: i16, only_before_cursor: bool) -> (String, String) {
         let mut prompt = String::new();
 
-        let ca = self.new_console_attach(true);
+        let ca = self.new_console_attach();
         let mut csbi = CONSOLE_SCREEN_BUFFER_INFO::default();
         if !win32::get_console_screen_buffer_info(ca.h_stdout, &mut csbi) {
             logd!("get console screen buffer info failed.");
@@ -906,7 +991,7 @@ impl Console {
 
     fn read_dimension_info(&self, console_size: (i32, i32)) -> ConsoleDimensionInfo {
         let mut info = ConsoleDimensionInfo::default();
-        let ca = self.new_console_attach(false);
+        let ca = self.new_console_attach();
 
         let mut csbi = CONSOLE_SCREEN_BUFFER_INFO::default();
         if !win32::get_console_screen_buffer_info(ca.h_stdout, &mut csbi) {
@@ -950,11 +1035,20 @@ impl Console {
         }
     }
 
-    fn get_y(&self) -> i16 {
-        let ca = self.new_console_attach(false);
+    fn get_xy(&self) -> (i16, i16) {
+        let (x, y, _) = self.get_xyw();
+        (x, y)
+    }
+
+    fn get_xyw(&self) -> (i16, i16, i16) {
+        let ca = self.new_console_attach();
         let mut csbi = CONSOLE_SCREEN_BUFFER_INFO::default();
         win32::get_console_screen_buffer_info(ca.h_stdout, &mut csbi);
-        csbi.dwCursorPosition.Y
+        (
+            csbi.dwCursorPosition.X,
+            csbi.dwCursorPosition.Y,
+            csbi.dwSize.X,
+        )
     }
 
     pub fn set_input(&mut self, input_text: &str) {

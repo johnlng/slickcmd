@@ -73,6 +73,7 @@ impl Core {
                 if key_up {
                     // logd!("* input events resumed.");
                     GLOBAL.set_suppress_input_event(false);
+                    APP_COMM.notify_key_suppress_end();
                 }
                 return LRESULT(1);
             }

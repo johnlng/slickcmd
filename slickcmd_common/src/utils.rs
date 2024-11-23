@@ -8,6 +8,7 @@ use crate::{
 use windows::core::GUID;
 use windows::Wdk::System::Threading::PROCESSINFOCLASS;
 use windows::Win32::Foundation::*;
+use windows::Win32::Globalization::*;
 use windows::Win32::Storage::FileSystem::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Shell::*;
@@ -108,6 +109,13 @@ pub fn get_home_dir() -> String {
     dir
 }
 
+fn ensure_slash_ending(mut path: String) -> String {
+    if !path.ends_with('\\') {
+        path.push('\\');
+    }
+    path
+}
+
 pub fn normalize_dir_path(path: &str) -> String {
     let hfile = win32::create_file(
         path,
@@ -118,8 +126,7 @@ pub fn normalize_dir_path(path: &str) -> String {
     );
 
     if hfile.is_invalid() {
-        //?
-        return path.into();
+        return ensure_slash_ending(path.into());
     }
     const BUF_SIZE: usize = MAX_PATH as _;
     let mut buf = [0u16; BUF_SIZE];
@@ -127,7 +134,7 @@ pub fn normalize_dir_path(path: &str) -> String {
     win32::close_handle(hfile);
 
     if cch == 0 {
-        return path.into();
+        return ensure_slash_ending(path.into());
     }
 
     let mut cch = cch as usize;
@@ -155,6 +162,13 @@ pub fn alert(msg: &str) {
 
 pub fn get_appdata_local_dir() -> String {
     win32::sh_get_folder_path(None, CSIDL_LOCAL_APPDATA as _, HANDLE::default(), 0)
+}
+
+pub fn get_temp_path() -> String {
+    const BUF_SIZE: usize = MAX_PATH as usize + 1;
+    let mut buf = [0u16; BUF_SIZE];
+    let cch = win32::get_temp_path(Some(&mut buf[..]));
+    String::from_utf16_lossy(&buf[..(cch as usize)])
 }
 
 pub fn get_exe_path() -> String {
@@ -215,4 +229,9 @@ pub fn iif<T>(condition: bool, true_val: T, false_val: T) -> T {
     } else {
         false_val
     }
+}
+
+pub fn get_mbcs_len(s: &str) -> isize {
+    let wcs: Vec<u16> = s.encode_utf16().collect();
+    win32::wide_char_to_multi_byte(CP_ACP, 0, &wcs, None) as _
 }

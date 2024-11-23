@@ -4,15 +4,14 @@ use std::cell::Cell;
 
 #[derive(Default)]
 pub struct Options {
-
     max_recent_dirs: Cell<u32>,
     cd_completion: Cell<bool>,
     run_on_startup: Cell<bool>,
     show_clock: Cell<bool>,
+    direct_calculator: Cell<bool>,
 }
 
 impl Options {
-
     pub fn get_ini_path() -> String {
         let path = utils::get_appdata_local_dir();
         path + "\\slickcmd\\slickcmd.ini"
@@ -24,6 +23,7 @@ impl Options {
         ini.write("General", "cd_completion", self.cd_completion());
         ini.write("General", "run_on_startup", self.run_on_startup());
         ini.write("General", "show_clock", self.show_clock());
+        ini.write("General", "use_calculator", self.direct_calculator());
     }
 
     pub fn init(&self) {
@@ -32,6 +32,7 @@ impl Options {
         self.set_cd_completion(ini.read_or("General", "cd_completion", true));
         self.set_run_on_startup(ini.read_or("General", "run_on_startup", true));
         self.set_show_clock(ini.read_or("General", "show_clock", false));
+        self.set_direct_calculator(ini.read_or("General", "use_calculator", false));
     }
 
     pub fn max_recent_dirs(&self) -> u32 {
@@ -64,5 +65,13 @@ impl Options {
 
     pub fn set_show_clock(&self, value: bool) {
         self.show_clock.set(value);
+    }
+
+    pub fn direct_calculator(&self) -> bool {
+        self.direct_calculator.get()
+    }
+
+    pub fn set_direct_calculator(&self, value: bool) {
+        self.direct_calculator.set(value);
     }
 }

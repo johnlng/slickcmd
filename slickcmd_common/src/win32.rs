@@ -19,13 +19,9 @@ use windows::Win32::System::ProcessStatus::*;
 use windows::Win32::System::SystemInformation::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::System::WindowsProgramming::*;
-use windows::Win32::UI::Accessibility::{
-    SetWinEventHook, UnhookWinEvent, HWINEVENTHOOK, WINEVENTPROC,
-};
+use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Controls::*;
-use windows::Win32::UI::HiDpi::{
-    GetDpiForWindow, SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT,
-};
+use windows::Win32::UI::HiDpi::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::Shell::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
@@ -973,6 +969,15 @@ pub fn multi_byte_to_wide_char(
     unsafe { MultiByteToWideChar(code_page, flags, mb_str, w_str) }
 }
 
+pub fn wide_char_to_multi_byte(
+    code_page: u32,
+    flags: u32,
+    wc_str: &[u16],
+    mb_str: Option<&mut [u8]>,
+) -> i32 {
+    unsafe { WideCharToMultiByte(code_page, flags, wc_str, mb_str, PCSTR::null(), None) }
+}
+
 pub fn message_beep(typ: MESSAGEBOX_STYLE) -> bool {
     unsafe { MessageBeep(typ).is_ok() }
 }
@@ -1114,6 +1119,12 @@ pub fn write_console_output_character(hstdout: HANDLE, text: &str, coord: COORD)
     let w_text: Vec<u16> = text.encode_utf16().collect();
     let mut cch_written = 0u32;
     _ = unsafe { WriteConsoleOutputCharacterW(hstdout, &w_text, coord, &mut cch_written as _) };
+    cch_written
+}
+
+pub fn write_console_output_character0(hstdout: HANDLE, wcs: &[u16], coord: COORD) -> u32 {
+    let mut cch_written = 0u32;
+    _ = unsafe { WriteConsoleOutputCharacterW(hstdout, wcs, coord, &mut cch_written as _) };
     cch_written
 }
 
@@ -1325,4 +1336,32 @@ pub fn get_dpi_for_window(hwnd: HWND) -> u32 {
 
 pub fn mul_div(number: i32, numerator: i32, denominator: i32) -> i32 {
     unsafe { MulDiv(number, numerator, denominator) }
+}
+
+pub fn get_temp_path(buf: Option<&mut [u16]>) -> u32 {
+    unsafe { GetTempPathW(buf) }
+}
+
+pub fn fill_console_output_character(
+    h_console_output: HANDLE,
+    c: u16,
+    count: u32,
+    coord: COORD,
+    cch_write: &mut u32,
+) -> bool {
+    unsafe {
+        FillConsoleOutputCharacterW(h_console_output, c, count, coord, cch_write as _).is_ok()
+    }
+}
+
+pub fn lock_window_update(hwnd: HWND) -> bool {
+    unsafe { LockWindowUpdate(hwnd).as_bool() }
+}
+
+pub fn flush_console_input_buffer(hstdin: HANDLE) -> bool {
+    unsafe { FlushConsoleInputBuffer(hstdin).is_ok() }
+}
+
+pub fn generate_console_ctrl_event(ctrl_event: u32, process_group_id: u32) -> bool {
+    unsafe { GenerateConsoleCtrlEvent(ctrl_event, process_group_id).is_ok() }
 }
