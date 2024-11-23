@@ -8,6 +8,24 @@
 
 **Slick Cmd** is a lightweight utility designed to supercharge your Windows Command Prompt experience by making directory navigation, path completion, and command management more efficient. Slick Cmd runs quietly in your system tray, enabling you to access its powerful features through intuitive keyboard shortcuts.
 
+## Screenshots
+
+<figure>
+  <img src="docs/images/screen-cd.png" alt="cd completion">
+  <figcaption>cd completion</figcaption>
+</figure>
+
+<figure>
+  <img src="docs/images/screen-clock.png" alt="console clock">
+  <figcaption>console clock</figcaption>
+</figure>
+
+<figure>
+  <img src="docs/images/screen-calc.png" alt="direct calculation">
+  <figcaption>direct calculation</figcaption>
+</figure>
+
+
 ## ✨ Features
 
 - **Streamlined Directory Navigation:**
