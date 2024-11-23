@@ -1,7 +1,7 @@
 use crate::global::GLOBAL;
 use crate::options_dlg::OptionsDlg;
 use slickcmd_common::winproc::{wndproc, WinProc};
-use slickcmd_common::{consts::*, win32};
+use slickcmd_common::{consts::*, utils, win32};
 use std::env;
 use std::ffi::c_void;
 use std::mem::size_of;
@@ -77,7 +77,8 @@ impl MainWin {
     }
 
     fn launch_cmd(&self) {
-        win32::shell_execute(self.hwnd, "open", "cmd.exe", None, None, SW_SHOWNORMAL);
+        let home = utils::get_home_dir();
+        win32::shell_execute(self.hwnd, "open", "cmd.exe", None, Some(&home), SW_SHOWNORMAL);
     }
 
     fn process_tray_callback(&mut self, wparam: WPARAM, lparam: LPARAM) {
