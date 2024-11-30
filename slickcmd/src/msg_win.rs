@@ -13,6 +13,7 @@ use slickcmd_common::winproc::{wndproc, WinProc};
 use slickcmd_common::{logd, utils, win32};
 use widestring::U16CStr;
 use windows::Win32::{Foundation::*, UI::Input::KeyboardAndMouse::*, UI::WindowsAndMessaging::*};
+use crate::tray_wins::{TrayWins};
 use crate::wt_focus_man::WtFocusMan;
 
 pub struct MsgWin {
@@ -118,6 +119,15 @@ impl WinProc for MsgWin {
         }
 
         match msg {
+
+            WM_TRAY_CALLBACK => {
+                let nin_msg = lparam.0 as u16 as u32;
+                if nin_msg == NIN_SELECT {
+                    let index = utils::hiword_usize(lparam.0 as _) as usize;
+                    TrayWins::restore(index);
+                }
+            }
+
             WM_NOTIFY_KEY_SUPPRESS_END => {
                 if let Some(cur_console) = &self.cur_console() {
                     cur_console.borrow_mut().on_key_suppress_end();
@@ -287,7 +297,7 @@ impl WinProc for MsgWin {
             }
 
             WM_DESTROY => {
-                //?
+                TrayWins::restore_all();
             }
 
             _ => (),

@@ -82,7 +82,7 @@ impl MainWin {
     }
 
     fn process_tray_callback(&mut self, wparam: WPARAM, lparam: LPARAM) {
-        let nin_msg = lparam.0 as u32;
+        let nin_msg = lparam.0 as u16 as u32;
 
         match nin_msg {
             NIN_SELECT => {

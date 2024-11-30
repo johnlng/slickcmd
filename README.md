@@ -64,7 +64,10 @@
 - **Command line calculator**
     - Perform calculations directly in the classic command prompt, just like in PowerShell.
     - >This is an optional feature. To enable it, check the options dialog.
-  
+
+- **Minimize to tray**
+    - Minimize the console window to the system tray by holding the Alt key while clicking the minimize button.
+
 ## ⚙️ Requirements
 
 * **Operating System:** Windows 10 or above, 64-bit

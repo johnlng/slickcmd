@@ -6,10 +6,8 @@ use windows::{
     Win32::{Foundation::*, UI::Shell::*, UI::WindowsAndMessaging::*},
 };
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TrayIcon {
-    hwnd_callback: HWND,
-
     pub guid: GUID,
 }
 
@@ -18,13 +16,13 @@ impl TrayIcon {
         &mut self,
         hicon: HICON,
         tooltip: &str,
+        info: &str,
         hwnd_callback: HWND,
         callback_msg: u32,
         guid: &GUID,
         id: u32,
     ) -> WIN32_ERROR {
         self.guid = *guid;
-        self.hwnd_callback = hwnd_callback;
 
         let mut nid = NOTIFYICONDATAW {
             cbSize: size_of::<NOTIFYICONDATAW>() as u32,
@@ -42,15 +40,17 @@ impl TrayIcon {
             hIcon: hicon,
             guidItem: self.guid,
             uID: id,
-            hWnd: self.hwnd_callback,
+            hWnd: hwnd_callback,
             uCallbackMessage: callback_msg,
             ..Default::default()
         };
         let wsz_tooltip = win32::wsz_from_str(tooltip);
         nid.szTip[..wsz_tooltip.len()].copy_from_slice(wsz_tooltip.as_slice());
 
-        let wsz_info = win32::wsz_from_str("Slick Cmd Started");
-        nid.szInfo[..wsz_info.len()].copy_from_slice(wsz_info.as_slice());
+        if !info.is_empty() {
+            let wsz_info = win32::wsz_from_str(info);
+            nid.szInfo[..wsz_info.len()].copy_from_slice(wsz_info.as_slice());
+        }
 
         if !win32::shell_notify_icon(NIM_ADD, &nid) {
             return get_last_error();
@@ -62,7 +62,7 @@ impl TrayIcon {
         NO_ERROR
     }
 
-    pub fn destroy(&mut self) {
+    pub fn destroy(&self) {
         let nid = NOTIFYICONDATAW {
             cbSize: size_of::<NOTIFYICONDATAW>() as u32,
             uFlags: NIF_GUID,

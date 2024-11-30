@@ -81,7 +81,9 @@ impl App {
         let exe_path = env::current_exe().unwrap().into_os_string();
         let md5 = md5::compute(exe_path.as_encoded_bytes());
         let guid = utils::u8s_as_guid(&md5.0);
-        _ = self.tray_icon.create(hicon, APP_TITLE, hwnd_main, WM_TRAY_CALLBACK, &guid, 0);
+
+        let info = "Slick Cmd Started";
+        _ = self.tray_icon.create(hicon, APP_TITLE, info, hwnd_main, WM_TRAY_CALLBACK, &guid, 0);
 
         if !self.init_shell_hook() {
             return false;

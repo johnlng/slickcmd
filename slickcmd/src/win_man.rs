@@ -1,18 +1,19 @@
 use crate::console::Console;
 use crate::console_man::ConsoleMan;
 use crate::global::GLOBAL;
+use crate::tray_wins::TrayWins;
 use crate::wt_focus_man::WtFocusMan;
-use slickcmd_common::consts::{WM_POST_CONSOLE_ACTIVATE};
+use slickcmd_common::consts::WM_POST_CONSOLE_ACTIVATE;
 use slickcmd_common::{logd, win32};
-use std::cell::{RefCell};
+use std::cell::RefCell;
 use std::ffi::c_void;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use windows::Win32::Foundation::*;
+use windows::Win32::UI::Input::KeyboardAndMouse::VK_LMENU;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 pub struct WinMan {
-
     console_man: Rc<RefCell<ConsoleMan>>,
 
     last_active_hwnd: AtomicUsize,
@@ -49,17 +50,21 @@ impl WinMan {
             WtFocusMan::on_wt_deactivate();
         }
 
-        let hwnd_core_msg = win32::find_window_ex(
-            HWND_MESSAGE,
-            None,
-            Some("slck_cmd_core_msg"),
-            None,
-        );
+        let hwnd_core_msg =
+            win32::find_window_ex(HWND_MESSAGE, None, Some("slck_cmd_core_msg"), None);
 
         if hwnd_core_msg.is_invalid() {
             logd!("core msg win not found?");
         } else {
             win32::send_message(hwnd_core_msg, WM_CLOSE, WPARAM(0), LPARAM(0));
+        }
+
+        let hwnd = HWND(hwnd as _);
+        if win32::is_iconic(hwnd)
+            && win32::get_async_key_state(VK_LMENU) < 0
+            && win32::get_class_name(hwnd) == "ConsoleWindowClass"
+        {
+            TrayWins::add(hwnd);
         }
     }
 
@@ -85,7 +90,8 @@ impl WinMan {
                 return true;
             }
             let borrow = self.console_man.try_borrow_mut();
-            if borrow.is_err() { //?
+            if borrow.is_err() {
+                //?
                 return false;
             }
             borrow.unwrap().on_activate(0);
@@ -103,12 +109,12 @@ impl WinMan {
         true
     }
 
-    pub fn get_console_bounds(hwnd_term: HWND) -> RECT { //client coordinates in term window
+    pub fn get_console_bounds(hwnd_term: HWND) -> RECT {
+        //client coordinates in term window
         let mut rect = RECT::default();
         if hwnd_term.0 as usize == WtFocusMan::hwnd_wt() {
             rect = WtFocusMan::get_console_bounds();
-        }
-        else {
+        } else {
             win32::get_client_rect(hwnd_term, &mut rect);
         }
         rect

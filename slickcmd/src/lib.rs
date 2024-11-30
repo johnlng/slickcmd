@@ -22,3 +22,4 @@ pub mod wt_focus_man;
 pub mod console_man;
 pub mod clock_win;
 pub mod calculator;
+pub mod tray_wins;
