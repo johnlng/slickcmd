@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.0] - 2024-11-30
+## Added
+- Alt + Minimize to system tray
+
 ## [2.2.0] - 2024-11-23
 ### Added
 - Direct calculation on the command line.
