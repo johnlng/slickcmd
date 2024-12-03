@@ -112,7 +112,7 @@ impl Core {
             if alt_down && GLOBAL.showing_acl() {
                 AC_LIST.lock().unwrap().close();
             }
-            if vk == VK_RETURN.0 {
+            if vk == VK_RETURN.0 || vk == VK_UP.0 || vk == VK_DOWN.0 {
                 if APP_COMM.process_key_down(vk, alt_down) {
                     return LRESULT(1);
                 }

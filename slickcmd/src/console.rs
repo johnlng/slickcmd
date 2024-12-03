@@ -1,5 +1,6 @@
 use crate::app::App;
 use crate::app_state::AppState;
+use crate::calculator;
 use crate::clock_win::ClockWin;
 use crate::command_hist::CommandHist;
 use crate::command_hist_win::CommandHistWin;
@@ -21,7 +22,6 @@ use windows::Win32::System::Console::*;
 use windows::Win32::System::Threading::*;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
-use crate::calculator;
 
 #[derive(Default)]
 pub struct Console {
@@ -44,6 +44,7 @@ pub struct Console {
 
     command_hist: CommandHist,
     command_hist_win: Option<Box<CommandHistWin>>,
+    hist_offset: usize,
 
     last_command_y: i16,
 
@@ -210,7 +211,7 @@ impl Console {
             self.update_cur_dir();
         }
 
-        if GLOBAL.options.show_clock()  {
+        if GLOBAL.options.show_clock() {
             let clock_win = ClockWin::new(self.hwnd_term);
 
             let bounds = self.get_console_bounds();
@@ -260,9 +261,47 @@ impl Console {
 
         if vk == VK_RETURN {
             return self.handle_return_down(alt_down);
+        } else if vk == VK_UP {
+            if !alt_down {
+                return self.handle_up();
+            }
+        } else if vk == VK_DOWN {
+            if !alt_down {
+                return self.handle_down();
+            }
         }
 
         false
+    }
+
+    fn handle_up(&mut self) -> bool {
+        if !self.use_calculator() {
+            return false;
+        }
+        let infos = &self.command_hist.infos;
+        let count = infos.len();
+
+        if self.hist_offset < count {
+            self.hist_offset += 1;
+            let input = infos[count - self.hist_offset].command.clone();
+            self.set_input(&input);
+        }
+        true
+    }
+
+    fn handle_down(&mut self) -> bool {
+        if !self.use_calculator() {
+            return false;
+        }
+        let infos = &self.command_hist.infos;
+        let count = infos.len();
+
+        if self.hist_offset > 1 {
+            self.hist_offset -= 1;
+            let input = infos[count - self.hist_offset].command.clone();
+            self.set_input(&input);
+        }
+        true
     }
 
     fn handle_return_down(&mut self, _alt_down: bool) -> bool {
@@ -285,14 +324,17 @@ impl Console {
         }
 
         if !self.replacing_command.is_empty() {
-            self.command_hist.add(&self.replacing_command);
+            // self.command_hist.add(&self.replacing_command);
+            let cmd = self.replacing_command.clone();
+            self.add_command_hist(&cmd);
             return true;
         } else if !input.is_empty() {
-            self.command_hist.add(&input);
+            // self.command_hist.add(&input);
+            self.add_command_hist(&input);
         }
 
         let mut result = false;
-        if GLOBAL.options.direct_calculator() && self.shell.typ() == "cmd" {
+        if self.use_calculator() {
             if calculator::accepts_input(&input) {
                 let output = calculator::evaluate(&input);
                 self.custom_command_output = output;
@@ -302,6 +344,10 @@ impl Console {
         self.last_command_y = cur_y;
 
         result
+    }
+
+    fn use_calculator(&self) -> bool {
+        GLOBAL.options.direct_calculator() && self.shell.typ() == "cmd"
     }
 
     pub fn on_key_suppress_end(&mut self) {
@@ -343,7 +389,7 @@ impl Console {
         let (_, y0, w) = self.get_xyw();
 
         let mut line_buf = vec![0u16; w as usize];
-        let coord = COORD{X:0, Y: y0};
+        let coord = COORD { X: 0, Y: y0 };
         win32::read_console_output_character(ca.h_stdout, &mut line_buf, coord);
 
         let mut ki = KeyboardInput::new();
@@ -574,7 +620,8 @@ impl Console {
         ki.send(true);
 
         //
-        self.command_hist.add(cmd);
+        // self.command_hist.add(cmd);
+        self.add_command_hist(cmd);
     }
 
     fn on_alt_left(&mut self) {
@@ -805,7 +852,13 @@ impl Console {
         ki.send(true);
 
         //
-        self.command_hist.add(&cmd);
+        // self.command_hist.add(&cmd);
+        self.add_command_hist(&cmd);
+    }
+
+    fn add_command_hist(&mut self, cmd: &str) {
+        self.command_hist.add(cmd);
+        self.hist_offset = 0;
     }
 
     pub fn clear(&self) {
