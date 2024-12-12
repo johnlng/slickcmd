@@ -395,6 +395,7 @@ dependencies = [
  "log",
  "md5",
  "once_cell",
+ "regex",
  "simplelog",
  "slickcmd_common",
  "time",

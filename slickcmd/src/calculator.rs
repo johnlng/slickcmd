@@ -1,6 +1,7 @@
 use bc::interpreter::Interpreter;
 use bc::number::Number;
 use bc::parser;
+use regex::Regex;
 use std::collections::HashSet;
 
 #[derive(PartialEq)]
@@ -147,13 +148,27 @@ pub fn evaluate(input: &str) -> String {
 
     let program = input.to_string() + "\n";
     let mut interpreter = Interpreter::default();
+
+    let lib = parser::parse_program("scale=20;\n", None).unwrap();
+    interpreter.exec(lib).unwrap();
+
     match parser::parse_program(&program, None) {
-        Ok(program) => {
-            let result = interpreter.exec(program);
-            result.unwrap_or_else(|e| format!("{}{}", e.partial_output(), e))
-        }
-        Err(e) => {
-            e.to_string()
-        }
+        Ok(program) => match interpreter.exec(program) {
+            Ok(result) => remove_zeros_after_dot(&result),
+            Err(e) => {
+                format!("{}{}", e.partial_output(), e)
+            }
+        },
+        Err(e) => e.to_string(),
     }
+}
+
+fn remove_zeros_after_dot(s: &str) -> String {
+    let mut s = s.trim_end();
+    let re = Regex::new(r"^\d+\.(\d+)?0$").unwrap();
+    if re.is_match(s) {
+        s = s.trim_end_matches('0');
+        s = s.trim_end_matches('.');
+    }
+    s.to_string()
 }
